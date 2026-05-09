@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ShiftLife SWAST</title>
+<meta name="description" content="SWAST shift planner with NHS AfC pay calculation, break windows and end of shift protection">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#003087">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ShiftLife">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --nhs: #003087; --nhs2: #005EB8;
+  --bg: #f0f4f8; --surface: #ffffff; --surface2: #f8fafc;
+  --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.14);
+  --txt1: #0d1117; --txt2: #4a5568; --txt3: #94a3b8;
+  --days-bg: #FEF3C7; --days-txt: #92400E; --days-border: #F59E0B;
+  --nights-bg: #EDE9FE; --nights-txt: #4C1D95; --nights-border: #8B5CF6;
+  --off-bg: #D1FAE5; --off-txt: #064E3B; --off-border: #34D399;
+  --sick-bg: #FEE2E2; --sick-txt: #991B1B; --sick-border: #F87171;
+  --red: #EF4444; --amber: #F59E0B; --green: #10B981; --blue: #3B82F6; --purple: #8B5CF6;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
+  --radius: 12px; --radius-sm: 8px;
+  --safe-top: env(safe-area-inset-top); --safe-bottom: env(safe-area-inset-bottom);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --surface: #161b22; --surface2: #1c2128;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+    --txt1: #e6edf3; --txt2: #8b949e; --txt3: #484f58;
+    --days-bg: #451a03; --days-txt: #FDE68A; --days-border: #92400E;
+    --nights-bg: #2e1065; --nights-txt: #DDD6FE; --nights-border: #4C1D95;
+    --off-bg: #022c22; --off-txt: #6EE7B7; --off-border: #065F46;
+    --sick-bg: #450a0a; --sick-txt: #FCA5A5; --sick-border: #7f1d1d;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3); --shadow-md: 0 4px 6px rgba(0,0,0,0.3);
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); font-family: 'Inter', system-ui, sans-serif; color: var(--txt1); overflow-x: hidden; }
+body { padding-bottom: calc(70px + var(--safe-bottom)); }
+
+/* Header */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--nhs);
+  padding: calc(var(--safe-top) + 12px) 16px 12px;
+  box-shadow: 0 2px 8px rgba(0,48,135,0.4);
+}
+.header-inner { display: flex; align-items: center; justify-content: space-between; }
+.app-name { font-size: 20px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+.app-sub { font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 1px; }
+.month-nav { display: flex; align-items: center; gap: 8px; }
+.nav-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(255,255,255,0.15); border: none; color: #fff;
+  font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.nav-btn:active { background: rgba(255,255,255,0.3); }
+.month-label { font-size: 13px; font-weight: 500; color: #fff; min-width: 108px; text-align: center; }
+
+/* Legend */
+.legend {
+  display: flex; gap: 10px; padding: 10px 16px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  flex-wrap: wrap; align-items: center;
+}
+.leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--txt2); }
+.leg-dot { width: 10px; height: 10px; border-radius: 3px; }
+.leg-hint { margin-left: auto; font-size: 10px; color: var(--txt3); }
+
+/* Calendar */
+.cal-section { padding: 12px; background: var(--surface); }
+.day-hdr { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 4px; }
+.dh { text-align: center; font-size: 10px; font-weight: 600; color: var(--txt3); padding: 3px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cell {
+  min-height: 80px; border-radius: 10px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; cursor: pointer;
+  background: var(--surface2); border: 1px solid var(--border);
+  user-select: none; transition: transform 0.1s, opacity 0.1s; overflow: hidden; padding: 2px;
+}
+.cell:active { transform: scale(0.88); opacity: 0.8; }
+.cell.empty { cursor: default; background: transparent; border: none; }
+.cell.is-today { border: 2px solid var(--amber); }
+.cell.selected { border: 2px solid var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+.cell.days { background: var(--days-bg); border-color: var(--days-border); }
+.cell.nights { background: var(--nights-bg); border-color: var(--nights-border); }
+.cell.off { background: var(--off-bg); border-color: var(--off-border); }
+.cell.sick { background: var(--sick-bg); border-color: var(--sick-border); }
+.cn { font-size: 11px; font-weight: 600; color: var(--txt2); line-height: 1; }
+.cell.days .cn { color: var(--days-txt); }
+.cell.nights .cn { color: var(--nights-txt); }
+.cell.off .cn { color: var(--off-txt); }
+.cell.sick .cn { color: var(--sick-txt); }
+.cl { font-size: 13px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; margin-top: 1px; }
+.cell.days .cl { color: var(--days-txt); }
+.cell.nights .cl { color: var(--nights-txt); }
+.cell.off .cl { color: var(--off-txt); }
+.cell.sick .cl { color: var(--sick-txt); }
+.ct { font-size: 9px; margin-top: 2px; line-height: 1.3; text-align: center; opacity: 0.9; font-weight: 600; font-family: 'DM Mono', monospace; }
+.cell.days .ct { color: var(--days-txt); }
+.cell.nights .ct { color: var(--nights-txt); }
+.cell.off .ct { color: var(--off-txt); }
+.cell.sick .ct { color: var(--sick-txt); }
+.cs { font-size: 8px; margin-top: 2px; line-height: 1.2; text-align: center; opacity: 0.85; font-weight: 600; overflow: hidden; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
+.cell.days .cs { color: var(--days-txt); }
+.cell.nights .cs { color: var(--nights-txt); }
+.cell.off .cs { color: var(--off-txt); }
+.cell.sick .cs { color: var(--sick-txt); }
+.cinds { display: flex; gap: 2px; margin-top: 2px; justify-content: center; }
+.ind { width: 4px; height: 4px; border-radius: 50%; }
+
+/* Detail Panel */
+.detail-panel {
+  margin: 0; background: var(--surface);
+  border-top: 1px solid var(--border); border-bottom: 3px solid var(--blue);
+  display: none;
+}
+.detail-panel.open { display: block; }
+.dp-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; background: var(--surface2); border-bottom: 1px solid var(--border);
+}
+.dp-title { font-size: 15px; font-weight: 600; color: var(--txt1); }
+.dp-close {
+  width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border2);
+  cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+  color: var(--txt2); background: var(--surface);
+}
+.tab-bar { display: flex; border-bottom: 1px solid var(--border); background: var(--surface2); overflow-x: auto; }
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-btn {
+  flex: 1; min-width: 70px; padding: 10px 4px; font-size: 11px; font-weight: 500;
+  cursor: pointer; border: none; background: transparent; color: var(--txt3);
+  border-bottom: 2px solid transparent; white-space: nowrap; text-align: center;
+  transition: all 0.15s;
+}
+.tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+.tab-pane { display: none; padding: 16px; }
+.tab-pane.active { display: block; }
+.dp-label { font-size: 11px; font-weight: 600; color: var(--txt3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+.dp-row { margin-bottom: 16px; }
+
+/* Type buttons */
+.type-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.tbtn {
+  padding: 8px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
+  cursor: pointer; border: 1px solid var(--border2); color: var(--txt2);
+  background: var(--surface2); transition: all 0.15s;
+}
+.tbtn:active { transform: scale(0.95); }
+.tbtn.ad { background: var(--days-bg); color: var(--days-txt); border-color: var(--days-border); }
+.tbtn.an { background: var(--nights-bg); color: var(--nights-txt); border-color: var(--nights-border); }
+.tbtn.ao { background: var(--off-bg); color: var(--off-txt); border-color: var(--off-border); }
+.tbtn.as { background: var(--sick-bg); color: var(--sick-txt); border-color: var(--sick-border); }
+.tbtn.ac { background: #FEF2F2; color: #991B1B; border-color: #F87171; }
+@media (prefers-color-scheme: dark) {
+  .tbtn.ac { background: #450a0a; color: #FCA5A5; border-color: #7f1d1d; }
+  .tbtn.as { background: #450a0a; color: #FCA5A5; border-color: #7f1d1d; }
+}
+
+/* Form elements */
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field label { display: block; font-size: 11px; font-weight: 600; color: var(--txt3); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+.field input[type=time] {
+  width: 100%; padding: 10px 12px; font-size: 15px; font-family: 'DM Mono', monospace;
+  border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  background: var(--surface2); color: var(--txt1);
+}
+.field input[type=time]:focus { outline: 2px solid var(--blue); border-color: transparent; }
+.field input[type=number] {
+  width: 100%; padding: 10px 12px; font-size: 15px; font-family: 'DM Mono', monospace;
+  border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  background: var(--surface2); color: var(--txt1); text-align: center;
+}
+select {
+  width: 100%; padding: 10px 12px; font-size: 14px; font-family: 'Inter', sans-serif;
+  border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  background: var(--surface2); color: var(--txt1);
+}
+textarea {
+  width: 100%; min-height: 120px; padding: 12px; font-size: 14px;
+  font-family: 'Inter', sans-serif; line-height: 1.6;
+  border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  background: var(--surface2); color: var(--txt1); resize: vertical;
+}
+textarea::placeholder { color: var(--txt3); }
+textarea:focus, select:focus { outline: 2px solid var(--blue); border-color: transparent; }
+
+/* Toggle */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.toggle-label { font-size: 14px; color: var(--txt1); }
+.toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.tog-track { position: absolute; inset: 0; border-radius: 12px; background: var(--border2); cursor: pointer; transition: 0.2s; }
+.tog-track:before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; border-radius: 50%; background: white; transition: 0.2s; }
+.toggle input:checked + .tog-track { background: var(--green); }
+.toggle input:checked + .tog-track:before { transform: translateX(20px); }
+
+/* Summary box */
+.sbox { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.srow { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.srow:last-child { border-bottom: none; }
+.slbl { font-size: 12px; color: var(--txt2); }
+.sval { font-size: 13px; font-weight: 600; color: var(--txt1); font-family: 'DM Mono', monospace; }
+.sval.grn { color: var(--green); }
+.sval.red { color: var(--red); }
+.sval.blu { color: var(--blue); }
+.sval.big { font-size: 16px; }
+
+/* Info boxes */
+.ibox { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 12px; line-height: 1.6; margin-bottom: 10px; }
+.ibox strong { font-weight: 600; }
+.ibox.blue { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+.ibox.green { background: #ECFDF5; color: #065F46; border: 1px solid #6EE7B7; }
+.ibox.amber { background: #FFFBEB; color: #92400E; border: 1px solid #FCD34D; }
+.ibox.red { background: #FEF2F2; color: #991B1B; border: 1px solid #FCA5A5; }
+@media (prefers-color-scheme: dark) {
+  .ibox.blue { background: #1e3a5f; color: #93C5FD; border-color: #1D4ED8; }
+  .ibox.green { background: #022c22; color: #6EE7B7; border-color: #065F46; }
+  .ibox.amber { background: #451a03; color: #FCD34D; border-color: #92400E; }
+  .ibox.red { background: #450a0a; color: #FCA5A5; border-color: #991B1B; }
+}
+
+/* Timeline */
+.timeline { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.tl-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.tl-row:last-child { border-bottom: none; }
+.tl-time { font-size: 13px; font-weight: 600; color: var(--txt1); min-width: 44px; font-family: 'DM Mono', monospace; }
+.tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+.tl-body { flex: 1; }
+.tl-title { font-size: 13px; font-weight: 500; color: var(--txt1); }
+.tl-desc { font-size: 11px; color: var(--txt3); margin-top: 2px; line-height: 1.4; }
+
+/* Content sections */
+.section { padding: 16px; border-bottom: 1px solid var(--border); }
+.section:last-child { border-bottom: none; }
+.sec-title { font-size: 11px; font-weight: 700; color: var(--txt3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 8px; box-shadow: var(--shadow); }
+.card:last-child { margin-bottom: 0; }
+.card-label { font-size: 10px; font-weight: 600; color: var(--txt3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+.card-value { font-size: 14px; color: var(--txt1); line-height: 1.4; }
+
+/* Stats grid */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); }
+.stat-card.wide { grid-column: 1 / -1; }
+.stat-val { font-size: 28px; font-weight: 600; color: var(--txt1); line-height: 1; font-family: 'DM Mono', monospace; }
+.stat-val.b { color: var(--blue); }
+.stat-val.p { color: var(--purple); }
+.stat-val.g { color: var(--green); }
+.stat-val.a { color: var(--amber); }
+.stat-val.r { color: var(--red); }
+.stat-val.pay { font-size: 32px; color: var(--green); }
+.stat-lbl { font-size: 11px; color: var(--txt3); margin-top: 4px; font-weight: 500; }
+.stat-sub { font-size: 10px; color: var(--txt3); margin-top: 2px; }
+
+/* Policy rules */
+.policy-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.policy-item:last-child { border-bottom: none; }
+.policy-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--nhs2); flex-shrink: 0; margin-top: 5px; }
+.policy-text { font-size: 13px; color: var(--txt2); line-height: 1.5; }
+.policy-text strong { color: var(--txt1); font-weight: 600; }
+
+/* Badges */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge.days { background: var(--days-bg); color: var(--days-txt); }
+.badge.nights { background: var(--nights-bg); color: var(--nights-txt); }
+.badge.off { background: var(--off-bg); color: var(--off-txt); }
+.badge.sick { background: var(--sick-bg); color: var(--sick-txt); }
+
+/* Food allowance */
+.food-pill { display: inline-flex; align-items: center; gap: 6px; background: #ECFDF5; color: #065F46; border: 1px solid #6EE7B7; border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 600; margin-top: 8px; }
+@media (prefers-color-scheme: dark) { .food-pill { background: #022c22; color: #6EE7B7; border-color: #065F46; } }
+
+/* Settings */
+.settings-label { font-size: 11px; font-weight: 600; color: var(--txt3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+.rate-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-top: 8px; }
+.rate-main { font-size: 20px; font-weight: 600; color: var(--txt1); font-family: 'DM Mono', monospace; }
+.rate-enh { font-size: 12px; font-weight: 600; color: var(--green); }
+
+/* NHS header badge */
+.nhs-strip { background: var(--nhs2); padding: 4px 16px; display: flex; align-items: center; gap: 8px; }
+.nhs-strip-txt { font-size: 10px; color: rgba(255,255,255,0.85); font-weight: 500; letter-spacing: 0.5px; }
+
+/* Stepper */
+.stepper { display:flex;align-items:center;border:1px solid var(--border2);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface2); }
+.step-btn { width:48px;height:48px;background:var(--surface2);border:none;border-right:1px solid var(--border2);font-size:22px;font-weight:300;color:var(--txt1);cursor:pointer;flex-shrink:0;transition:background 0.1s;display:flex;align-items:center;justify-content:center; }
+.step-btn:last-child { border-right:none;border-left:1px solid var(--border2); }
+.step-btn:active { background:var(--border); }
+.step-val { flex:1;text-align:center;font-size:18px;font-weight:600;color:var(--txt1);font-family:'DM Mono',monospace; }
+/* Swap */
+.swap-badge { display:inline-flex;align-items:center;gap:5px;background:#FFF3CD;color:#856404;border:1px solid #FFECB5;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;margin-top:8px; }
+@media(prefers-color-scheme:dark){ .swap-badge{background:#3d2c00;color:#FFECB5;border-color:#856404;} }
+.swap-detail { margin-top:10px;display:flex;flex-direction:column;gap:8px; }
+.swap-detail input,.swap-detail select { width:100%;padding:10px 12px;font-size:14px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt1); }
+/* Station input */
+.station-input { width:100%;padding:10px 12px;font-size:14px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt1); }
+.station-input:focus,.swap-detail input:focus,.swap-detail select:focus { outline:2px solid var(--blue);border-color:transparent; }
+/* OT row */
+.ot-row { display: flex; align-items: center; gap: 10px; }
+.ot-row label { font-size: 13px; color: var(--txt2); flex: 1; }
+.ot-row input { width: 70px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="nhs-strip" style="margin: calc(-12px - var(--safe-top)) -16px 12px; padding: 6px 16px;">
+    <div class="nhs-strip-txt">SOUTH WESTERN AMBULANCE SERVICE NHS FOUNDATION TRUST — GLOUCESTERSHIRE</div>
+  </div>
+  <div class="header-inner">
+    <div>
+      <div class="app-name">ShiftLife</div>
+      <div class="app-sub">NHS AfC Shift Planner</div>
+    </div>
+    <div class="month-nav">
+      <button class="nav-btn" id="prev">‹</button>
+      <div class="month-label" id="month-label"></div>
+      <button class="nav-btn" id="next">›</button>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="leg"><div class="leg-dot" style="background:#F59E0B"></div>Days</div>
+  <div class="leg"><div class="leg-dot" style="background:#8B5CF6"></div>Nights</div>
+  <div class="leg"><div class="leg-dot" style="background:#34D399"></div>Off</div>
+  <div class="leg"><div class="leg-dot" style="background:#F87171"></div>Sick</div>
+  <div class="leg"><div class="leg-dot" style="background:#EF4444;border-radius:50%"></div>OT/Late</div>
+  <div class="leg"><div class="leg-dot" style="background:#3B82F6;border-radius:50%"></div>Note</div>
+  <div class="leg"><div class="leg-dot" style="background:#F59E0B;border-radius:50%"></div>Swap</div>
+  <div class="leg-hint">Tap any day to edit</div>
+</div>
+
+<div class="cal-section">
+  <div class="day-hdr">
+    <div class="dh">Mon</div><div class="dh">Tue</div><div class="dh">Wed</div>
+    <div class="dh">Thu</div><div class="dh">Fri</div><div class="dh">Sat</div><div class="dh">Sun</div>
+  </div>
+  <div class="cal-grid" id="cal"></div>
+</div>
+
+<div class="detail-panel" id="detail">
+  <div class="dp-header">
+    <div class="dp-title" id="dp-title"></div>
+    <button class="dp-close" id="dp-close">✕</button>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="shift">Shift</button>
+    <button class="tab-btn" data-tab="break">Break</button>
+    <button class="tab-btn" data-tab="eos">End of Shift</button>
+    <button class="tab-btn" data-tab="notes">Notes</button>
+  </div>
+
+  <div class="tab-pane active" id="tab-shift">
+    <div class="dp-row">
+      <div class="dp-label">Shift type</div>
+      <div class="type-btns">
+        <button class="tbtn" data-type="days">☀ Days</button>
+        <button class="tbtn" data-type="nights">🌙 Nights</button>
+        <button class="tbtn" data-type="off">✓ Off</button>
+        <button class="tbtn" data-type="sick">🤒 Sick</button>
+        <button class="tbtn" data-type="none">Clear</button>
+      </div>
+    </div>
+    <div class="dp-row">
+      <div class="dp-label">Station</div>
+      <input class="station-input" type="text" id="dp-station" placeholder="e.g. Gloucester, Cheltenham, Stroud, Cirencester...">
+    </div>
+    <div class="dp-row">
+      <div class="dp-label">Start &amp; finish</div>
+      <div class="row2">
+        <div class="field"><label>Start time</label><input type="time" id="dp-start"></div>
+        <div class="field"><label>Finish time</label><input type="time" id="dp-finish"></div>
+      </div>
+    </div>
+    <div class="dp-row">
+      <div class="dp-label">Overrun time <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--txt3)">— paid at time and a half</span></div>
+      <div class="stepper">
+        <button class="step-btn" id="ot-minus">−</button>
+        <div class="step-val" id="ot-display">0 min</div>
+        <button class="step-btn" id="ot-plus">+</button>
+      </div>
+      <div style="font-size:11px;color:var(--txt3);margin-top:5px">5 minute increments · tap and hold for fast change</div>
+    </div>
+    <div class="dp-row">
+      <div class="toggle-row"><span class="toggle-label">Late finish</span><label class="toggle"><input type="checkbox" id="dp-late"><span class="tog-track"></span></label></div>
+    </div>
+    <div class="dp-row" id="job-number-row" style="display:none">
+      <div class="dp-label">Overrun job number</div>
+      <input type="text" id="dp-job-number" placeholder="e.g. SW0102030405" maxlength="20" style="width:100%;padding:10px 12px;border:2px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt1);font-size:15px;font-family:'DM Mono',monospace;letter-spacing:1px;margin-top:6px">
+      <div style="font-size:11px;color:var(--txt3);margin-top:4px">Record the CAD job number for your overrun claim</div>
+    </div>
+    <div class="dp-row">
+      <div class="dp-label">Shift swap</div>
+      <div class="toggle-row"><span class="toggle-label">This shift involves a swap</span><label class="toggle"><input type="checkbox" id="dp-swap"><span class="tog-track"></span></label></div>
+      <div class="swap-detail" id="swap-detail" style="display:none">
+        <input type="text" id="dp-swap-name" placeholder="Colleague name">
+        <select id="dp-swap-dir">
+          <option value="working">I am working their shift (they owe me)</option>
+          <option value="giving">They are working my shift (I owe them)</option>
+          <option value="even">Even swap — both settled</option>
+        </select>
+        <input type="text" id="dp-swap-note" placeholder="Swap notes (optional)">
+      </div>
+      <div id="swap-badge-wrap" style="display:none"><div class="swap-badge">⇄ Swap logged</div></div>
+    </div>
+    <div class="dp-row" style="margin-bottom:0">
+      <div class="dp-label">Pay estimate for this shift</div>
+      <div id="shift-summary"></div>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-break">
+    <div id="break-window-info"></div>
+    <div class="dp-row">
+      <div class="dp-label">Actual break times</div>
+      <div class="row2">
+        <div class="field"><label>Break start</label><input type="time" id="dp-bstart"></div>
+        <div class="field"><label>Break end</label><input type="time" id="dp-bend"></div>
+      </div>
+    </div>
+    <div class="dp-row">
+      <div class="dp-label">Break type</div>
+      <select id="break-type">
+        <option value="unpaid">Unpaid — deducted from pay</option>
+        <option value="paid">Paid — not deducted</option>
+      </select>
+    </div>
+    <div class="dp-row">
+      <div class="toggle-row"><span class="toggle-label">Break away from base station</span><label class="toggle"><input type="checkbox" id="dp-food"><span class="tog-track"></span></label></div>
+      <div id="food-pill-wrap" style="display:none"><div class="food-pill">£7.50 food allowance claimable (AfC)</div></div>
+    </div>
+    <div class="dp-row" style="margin-bottom:0">
+      <div class="dp-label">Break summary</div>
+      <div class="sbox" id="brk-summary"></div>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-eos">
+    <div id="eos-content"></div>
+  </div>
+
+  <div class="tab-pane" id="tab-notes">
+    <div class="dp-row">
+      <div class="dp-label">Shift notes</div>
+      <textarea id="dp-notes" placeholder="Handover notes, incidents, tasks, callouts, reminders..."></textarea>
+    </div>
+    <div style="font-size:11px;color:var(--txt3);line-height:1.5">Notes are saved automatically. A blue dot appears on the calendar day when a note exists.</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-title">Today &amp; next shift</div>
+  <div class="card"><div class="card-label">Today</div><div class="card-value" id="today-status">—</div></div>
+  <div class="card"><div class="card-label">Next shift</div><div class="card-value" id="next-shift">—</div></div>
+</div>
+
+<div class="section">
+  <div class="sec-title" id="stats-title">Monthly stats</div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-val b" id="s-days">0</div><div class="stat-lbl">Day shifts</div></div>
+    <div class="stat-card"><div class="stat-val p" id="s-nights">0</div><div class="stat-lbl">Night shifts</div></div>
+    <div class="stat-card"><div class="stat-val r" id="s-sick">0</div><div class="stat-lbl">Sick days</div></div>
+    <div class="stat-card"><div class="stat-val b" id="s-soc">0</div><div class="stat-lbl">Social hours</div></div>
+    <div class="stat-card"><div class="stat-val p" id="s-uns">0</div><div class="stat-lbl">Unsocial hours</div><div class="stat-sub" id="s-unsp"></div></div>
+    <div class="stat-card"><div class="stat-val r" id="s-ot">0</div><div class="stat-lbl">Overrun time</div></div>
+    <div class="stat-card"><div class="stat-val g" id="s-food">£0</div><div class="stat-lbl">Food allowance</div></div>
+    <div class="stat-card wide"><div class="stat-lbl">Estimated monthly pay</div><div class="stat-val pay" id="s-pay">£0.00</div><div class="stat-sub" id="s-pay-brk"></div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-title" id="swaps-title">Shift swaps this month</div>
+  <div id="swaps-list"><div style="font-size:13px;color:var(--txt3);padding:4px 0">No shift swaps logged this month.</div></div>
+</div>
+
+<div class="section">
+  <div class="card" style="padding:8px 14px">
+    <div class="policy-item"><div class="policy-dot"></div><div class="policy-text"><strong>Rest breaks:</strong> 11hrs+ shift = 45 min unpaid · Under 11hrs = 30 min unpaid. Window: 5th–7th hour of shift.</div></div>
+    <div class="policy-item"><div class="policy-dot"></div><div class="policy-text"><strong>Off-station food allowance:</strong> £7.50 per crew member when break taken away from base station (AfC).</div></div>
+    <div class="policy-item"><div class="policy-dot"></div><div class="policy-text"><strong>End of shift protection:</strong> Last 60 min — home area, Cat 1/2 &amp; backup · Last 30 min — Cat 1 &amp; P1 backup only · Last 5 min — confirmed cardiac arrest with CPR only.</div></div>
+    <div class="policy-item"><div class="policy-dot"></div><div class="policy-text"><strong>Unsocial hours:</strong> Before 08:00 or after 20:00 Mon–Fri, or any time Sat/Sun. Enhancement applied on top of base rate.</div></div>
+    <div class="policy-item"><div class="policy-dot"></div><div class="policy-text"><strong>Overtime:</strong> Time and a half beyond 37.5 hrs/week. Standard working week = 37.5 hours.</div></div>
+    <div class="policy-item" style="border:none"><div class="policy-dot"></div><div class="policy-text"><strong>Scope:</strong> Applies to DCA, PSV, RRV crews. Excludes Critical Care, HEMS, HART, Ops Officers, EOC.</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-title">NHS AfC settings</div>
+  <div class="card">
+    <div class="dp-row">
+      <div class="settings-label">NHS employment start date <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--txt3);font-size:11px">— used for sick pay calculation</span></div>
+      <input type="date" id="employment-start" style="width:100%;padding:10px 12px;border:2px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt1);font-size:15px;margin-top:6px">
+      <div style="font-size:11px;color:var(--txt3);margin-top:4px" id="sick-entitlement-display"></div>
+    </div>
+      <div class="settings-label">Pay band</div>
+      <select id="sel-band">
+        <option value="2">Band 2 — ECA / Support Worker</option>
+        <option value="3">Band 3 — ECA Senior / Technician</option>
+        <option value="4">Band 4 — Ambulance Technician</option>
+        <option value="5" selected>Band 5 — Paramedic</option>
+        <option value="6">Band 6 — Senior / Specialist Paramedic</option>
+        <option value="7">Band 7 — Advanced Paramedic</option>
+        <option value="8a">Band 8a — Consultant Paramedic</option>
+        <option value="8b">Band 8b</option>
+        <option value="8c">Band 8c</option>
+        <option value="8d">Band 8d</option>
+        <option value="9">Band 9</option>
+      </select>
+    </div>
+    <div class="dp-row" style="margin-bottom:0">
+      <div class="settings-label">Pay point</div>
+      <select id="sel-point">
+        <option value="entry">Entry point</option>
+        <option value="mid">Mid point</option>
+        <option value="top">Top of band</option>
+      </select>
+    </div>
+    <div class="dp-row" style="margin-top:12px;margin-bottom:0">
+      <div class="settings-label">Hourly rate <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--txt3);font-size:11px">— auto-filled from band, tap to edit</span></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <span style="font-size:18px;font-weight:600;color:var(--txt2)">£</span>
+        <input type="number" id="rate-input" min="0" step="0.01" style="flex:1;font-size:20px;font-family:'DM Mono',monospace;font-weight:600;text-align:left;padding:10px 12px;border:2px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt1)">
+        <span style="font-size:13px;color:var(--txt3)">/hr</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+        <div style="font-size:11px;color:var(--txt3)">Unsocial enhancement: <strong id="enh-display" style="color:var(--green)">+0%</strong></div>
+        <button id="rate-reset" style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;padding:4px 0">Reset to band rate</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAYS_FULL=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const BANDS={
+  '2':{enh:0.41,entry:12.31,mid:12.72,top:13.13},
+  '3':{enh:0.35,entry:12.59,mid:13.05,top:13.47},
+  '4':{enh:0.30,entry:13.56,mid:14.23,top:14.89},
+  '5':{enh:0.30,entry:15.33,mid:17.00,top:18.66},
+  '6':{enh:0.30,entry:19.09,mid:21.04,top:22.99},
+  '7':{enh:0.30,entry:23.60,mid:25.31,top:27.01},
+  '8a':{enh:0.30,entry:27.49,mid:29.22,top:30.94},
+  '8b':{enh:0.30,entry:31.82,mid:34.40,top:36.97},
+  '8c':{enh:0.30,entry:37.99,mid:40.89,top:43.78},
+  '8d':{enh:0.30,entry:45.09,mid:48.54,top:51.99},
+  '9':{enh:0.30,entry:53.89,mid:57.96,top:62.02}
+};
+
+const now=new Date();
+let vY=now.getFullYear(),vM=now.getMonth(),shifts={},selKey=null,activeTab='shift',selBand='5',selPoint='entry';
+
+function toMins(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
+function calcH(s,f){if(!s||!f)return null;const sm=toMins(s);let fm=toMins(f);if(fm<=sm)fm+=1440;return Math.round((fm-sm)/60*10)/10;}
+function mTT(m){const mm=((m%1440)+1440)%1440;return `${String(Math.floor(mm/60)).padStart(2,'0')}:${String(mm%60).padStart(2,'0')}`;}
+function fH(h){return h===null||h===0?'—':`${Math.round(h*10)/10} hrs`;}
+function dk(y,m,d){return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+function todayDK(){return dk(now.getFullYear(),now.getMonth(),now.getDate());}
+function defSh(){return {type:'none',start:'',finish:'',overrunMins:0,lateFinish:false,jobNumber:'',breakStart:'',breakEnd:'',breakType:'unpaid',foodAllowance:false,notes:'',station:'',swapped:false,swapWith:'',swapDir:'working',swapNote:''};}
+function getSh(k){const d=defSh();const s=shifts[k]||{};if(s.overtime&&!s.overrunMins)s.overrunMins=Math.round(s.overtime*60);return Object.assign({},d,s);}
+function getRate(){return parseFloat(document.getElementById('rate-input').value)||BANDS[selBand][selPoint]||15.33;}
+function getEnh(){return BANDS[selBand].enh||0.30;}
+function autoBreakMins(g){return g>=11?45:g>0?30:0;}
+
+function calcUnsocMins(dKey,s,f){
+  if(!s||!f)return 0;
+  const[y,m,d]=dKey.split('-').map(Number);
+  const dow=new Date(y,m-1,d).getDay();
+  const sm=toMins(s);let fm=toMins(f);if(fm<=sm)fm+=1440;
+  let u=0;
+  for(let t=sm;t<fm;t+=15){
+    const cd=(dow+Math.floor(t/1440))%7,tid=t%1440;
+    if(cd===0||cd===6||tid<480||tid>=1200)u+=15;
+  }
+  return Math.min(u,fm-sm);
+}
+
+function calcPay(dKey,sh){
+  const g=calcH(sh.start,sh.finish)||0;
+  const mb=calcH(sh.breakStart,sh.breakEnd);
+  const nb=autoBreakMins(g)/60;
+  let brk=nb;
+  if(mb!==null&&sh.breakType==='unpaid')brk=mb;
+  else if(mb!==null)brk=0;
+  const worked=Math.max(0,g-brk);
+  const ot=(sh.overrunMins||0)/60;
+  const uM=calcUnsocMins(dKey,sh.start,sh.finish);
+  const uH=Math.min(uM/60,worked);
+  const sH=Math.max(0,worked-uH);
+  const rate=getRate(),enh=getEnh();
+  const sP=sH*rate,uP=uH*rate*(1+enh),oP=ot*rate*1.5;
+  return {g,brk,nhsBrk:nb,worked,uH,sH,sP,uP,oP,total:sP+uP+oP,rate,enh};
+}
+
+function shiftTL(s,f){
+  if(!s||!f)return null;
+  const sm=toMins(s);let fm=toMins(f);if(fm<=sm)fm+=1440;
+  return {bwS:mTT(sm+4*60),bwE:mTT(sm+7*60),g:(fm-sm)/60,e60:mTT(fm-60),e30:mTT(fm-30),e5:mTT(fm-5),fin:f};
+}
+
+function updateSummary(){
+  if(!selKey)return;
+  const sh=getSh(selKey);
+
+  if(activeTab==='shift'){
+    if(sh.type==='sick'){
+      const startDate=document.getElementById('employment-start').value;
+      const ent=getSickPayEntitlement(startDate);
+      const rate=parseFloat(document.getElementById('rate-input').value)||0;
+      const dailyFull=(rate*7.5).toFixed(2);
+      const dailyHalf=(rate*7.5*0.5).toFixed(2);
+      const entBlock=ent?`<div class="ibox blue" style="margin-top:8px"><strong>Your sick pay entitlement (${ent.label}):</strong><br>${ent.full} months full pay · ${ent.half} months half pay<br><span style="font-size:11px;color:var(--txt3)">Full day = £${dailyFull} · Half pay day = £${dailyHalf}</span></div>`:'<div class="ibox blue" style="margin-top:8px">Set your NHS employment start date in Settings to see sick pay entitlement.</div>';
+      document.getElementById('shift-summary').innerHTML='<div class="ibox red"><strong>🤒 Off Sick</strong> — This day is recorded as sick leave.</div>'+entBlock;
+      return;
+    }
+    const g=calcH(sh.start,sh.finish);
+    if(!g){document.getElementById('shift-summary').innerHTML='<div class="ibox blue">Set start and finish times to see your pay estimate and break rules.</div>';return;}
+    const p=calcPay(selKey,sh);
+    const fp=v=>`£${v.toFixed(2)}`;
+    document.getElementById('shift-summary').innerHTML=`
+      <div class="ibox blue" style="margin-bottom:10px"><strong>SWAST break auto-applied:</strong> ${p.nhsBrk} min unpaid (${g>=11?'11hr+ shift rule':'under 11hr rule'}). Break window: ${shiftTL(sh.start,sh.finish)?.bwS}–${shiftTL(sh.start,sh.finish)?.bwE}.</div>
+      <div class="sbox">
+        <div class="srow"><span class="slbl">Gross shift</span><span class="sval">${fH(p.g)}</span></div>
+        <div class="srow"><span class="slbl">Break deducted</span><span class="sval red">−${fH(p.brk)}</span></div>
+        <div class="srow"><span class="slbl">Social hours × £${p.rate.toFixed(2)}</span><span class="sval">${fH(p.sH)} = ${fp(p.sP)}</span></div>
+        <div class="srow"><span class="slbl">Unsocial hrs +${Math.round(p.enh*100)}%</span><span class="sval blu">${fH(p.uH)} = ${fp(p.uP)}</span></div>
+        ${p.oP>0?`<div class="srow"><span class="slbl">Overrun ×1.5</span><span class="sval">${sh.overrunMins} min = ${fp(p.oP)}</span></div>`:''}
+        <div class="srow"><span class="slbl" style="font-weight:600;color:var(--txt1)">Estimated shift pay</span><span class="sval big grn">${fp(p.total)}</span></div>
+        ${sh.foodAllowance?`<div class="srow"><span class="slbl">Food allowance (AfC)</span><span class="sval grn">+ £7.50</span></div>`:''}
+      </div>`;
+  }
+
+  if(activeTab==='break'){
+    const g=calcH(sh.start,sh.finish)||0;
+    const tl=shiftTL(sh.start,sh.finish);
+    const nb=autoBreakMins(g);
+    const mb=calcH(sh.breakStart,sh.breakEnd);
+    const inWindow=tl&&sh.breakStart?(toMins(sh.breakStart)>=toMins(tl.bwS)&&toMins(sh.breakStart)<=toMins(tl.bwE)):null;
+    document.getElementById('break-window-info').innerHTML=tl?
+      `<div class="ibox blue" style="margin-bottom:12px"><strong>SWAST policy:</strong> ${nb} min break required (${g>=11?'11hr+ shift':'under 11hr'}). Break window: <strong>${tl.bwS} – ${tl.bwE}</strong> (5th–7th hour).</div>`
+      :`<div class="ibox blue" style="margin-bottom:12px">Set shift times in the Shift tab to see your break window.</div>`;
+    document.getElementById('brk-summary').innerHTML=`
+      <div class="srow"><span class="slbl">NHS required break</span><span class="sval">${nb} min unpaid</span></div>
+      <div class="srow"><span class="slbl">Logged break</span><span class="sval">${mb!==null?`${fH(mb)} (${sh.breakType})`:'Not logged'}</span></div>
+      <div class="srow"><span class="slbl">Break window</span><span class="sval">${tl?`${tl.bwS} – ${tl.bwE}`:'—'}</span></div>
+      ${sh.foodAllowance?`<div class="srow"><span class="slbl">Food allowance</span><span class="sval grn">£7.50 claimable</span></div>`:''}
+      ${inWindow===true?`<div class="srow"><span class="slbl">Compliance</span><span class="sval grn">✓ Within window</span></div>`:''}
+      ${inWindow===false?`<div class="srow"><span class="slbl">Compliance</span><span class="sval" style="color:var(--amber)">⚠ Outside window</span></div>`:''}`;
+    document.getElementById('food-pill-wrap').style.display=sh.foodAllowance?'block':'none';
+  }
+
+  if(activeTab==='eos'){
+    const tl=shiftTL(sh.start,sh.finish);
+    if(!tl){document.getElementById('eos-content').innerHTML='<div class="ibox blue">Set start and finish times in the Shift tab to see your end of shift protection schedule.</div>';return;}
+    document.getElementById('eos-content').innerHTML=`
+      <div class="ibox blue" style="margin-bottom:12px"><strong>${Math.round(tl.g*10)/10} hour shift</strong> finishing at <strong>${tl.fin}</strong>. Home dispatch area applies from 60 min pre-end of shift.</div>
+      <div class="timeline">
+        <div class="tl-row"><div class="tl-time">${tl.e60}</div><div class="tl-dot" style="background:var(--blue)"></div><div class="tl-body"><div class="tl-title">60 min — moving back to home area</div><div class="tl-desc">Available: Category 1 · Category 2 · P1 Backup · P2 Backup</div></div></div>
+        <div class="tl-row"><div class="tl-time">${tl.e30}</div><div class="tl-dot" style="background:var(--amber)"></div><div class="tl-body"><div class="tl-title">30 min — home dispatch area only</div><div class="tl-desc">Available: Category 1 · P1 Backup only</div></div></div>
+        <div class="tl-row"><div class="tl-time">${tl.e5}</div><div class="tl-dot" style="background:var(--red)"></div><div class="tl-body"><div class="tl-title">5 min — home area only</div><div class="tl-desc">Confirmed cardiac arrest with CPR in progress only</div></div></div>
+        <div class="tl-row"><div class="tl-time">${tl.fin}</div><div class="tl-dot" style="background:var(--green)"></div><div class="tl-body"><div class="tl-title">End of shift — finish on time</div><div class="tl-desc">SWASFT committed to maximising prompt on-time finishes</div></div></div>
+      </div>
+      <div style="font-size:11px;color:var(--txt3);margin-top:10px;line-height:1.5">Home dispatch area = the 21-area dispatch zone where your base station is located. Applies 24/7 regardless of how areas are dispatched.</div>`;
+  }
+}
+
+function switchTab(t){
+  activeTab=t;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+t));
+  updateSummary();
+}
+document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+
+function openDetail(key,y,m,d){
+  selKey=key;
+  const sh=getSh(key);
+  const dw=new Date(y,m,d).getDay(),di=dw===0?6:dw-1;
+  document.getElementById('dp-title').textContent=`${DAYS_FULL[di]} ${d} ${MONTHS[m]}`;
+  document.querySelectorAll('.tbtn').forEach(b=>{
+    b.className='tbtn';
+    if(b.dataset.type===sh.type)b.classList.add(sh.type==='days'?'ad':sh.type==='nights'?'an':sh.type==='off'?'ao':sh.type==='sick'?'as':'ac');
+  });
+  ['dp-start','dp-finish'].forEach(id=>document.getElementById(id).value=sh[id==='dp-start'?'start':'finish']||'');
+  setOverrun(sh.overrunMins||0);
+  document.getElementById('dp-late').checked=sh.lateFinish||false;
+  const jnRow=document.getElementById('job-number-row');
+  jnRow.style.display=(sh.lateFinish)?'block':'none';
+  document.getElementById('dp-job-number').value=sh.jobNumber||'';
+  document.getElementById('dp-bstart').value=sh.breakStart||'';
+  document.getElementById('dp-bend').value=sh.breakEnd||'';
+  document.getElementById('break-type').value=sh.breakType||'unpaid';
+  document.getElementById('dp-food').checked=sh.foodAllowance||false;
+  document.getElementById('food-pill-wrap').style.display=sh.foodAllowance?'block':'none';
+  document.getElementById('dp-notes').value=sh.notes||'';
+  document.getElementById('dp-station').value=sh.station||'';
+  document.getElementById('dp-swap').checked=sh.swapped||false;
+  document.getElementById('dp-swap-name').value=sh.swapWith||'';
+  document.getElementById('dp-swap-dir').value=sh.swapDir||'working';
+  document.getElementById('dp-swap-note').value=sh.swapNote||'';
+  document.getElementById('swap-detail').style.display=sh.swapped?'flex':'none';
+  document.getElementById('swap-badge-wrap').style.display=sh.swapped&&sh.swapWith?'block':'none';
+  document.getElementById('detail').classList.add('open');
+  switchTab('shift');
+  document.getElementById('detail').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function persist(){
+  if(!selKey)return;
+  const sh=getSh(selKey);
+  sh.start=document.getElementById('dp-start').value;
+  sh.finish=document.getElementById('dp-finish').value;
+  sh.overrunMins=parseInt(document.getElementById('ot-display').dataset.mins)||0;
+  sh.lateFinish=document.getElementById('dp-late').checked;
+  sh.jobNumber=document.getElementById('dp-job-number').value.trim();
+  sh.breakStart=document.getElementById('dp-bstart').value;
+  sh.breakEnd=document.getElementById('dp-bend').value;
+  sh.breakType=document.getElementById('break-type').value;
+  sh.foodAllowance=document.getElementById('dp-food').checked;
+  sh.notes=document.getElementById('dp-notes').value;
+  sh.station=document.getElementById('dp-station').value.trim();
+  sh.swapped=document.getElementById('dp-swap').checked;
+  sh.swapWith=document.getElementById('dp-swap-name').value.trim();
+  sh.swapDir=document.getElementById('dp-swap-dir').value;
+  sh.swapNote=document.getElementById('dp-swap-note').value.trim();
+  const empty=sh.type==='none'&&!sh.start&&!sh.finish&&!sh.overrunMins&&!sh.notes&&!sh.foodAllowance&&!sh.station&&!sh.swapped;
+  if(empty)delete shifts[selKey];else shifts[selKey]=sh;
+  saveData();updateSummary();render();
+}
+
+document.querySelectorAll('.tbtn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(!selKey)return;
+    const t=btn.dataset.type;const sh=getSh(selKey);sh.type=t;
+    if(t==='days'&&!sh.start){sh.start='07:00';sh.finish='19:00';document.getElementById('dp-start').value='07:00';document.getElementById('dp-finish').value='19:00';}
+    if(t==='nights'&&!sh.start){sh.start='19:00';sh.finish='07:00';document.getElementById('dp-start').value='19:00';document.getElementById('dp-finish').value='07:00';}
+    if(t==='none')delete shifts[selKey];else shifts[selKey]=sh;
+    document.querySelectorAll('.tbtn').forEach(b=>{b.className='tbtn';if(b.dataset.type===t)b.classList.add(t==='days'?'ad':t==='nights'?'an':t==='off'?'ao':t==='sick'?'as':'ac');});
+    persist();
+  });
+});
+
+// Stepper
+function fmtMins(m){if(m===0)return '0 min';if(m<60)return `${m} min`;const h=Math.floor(m/60),r=m%60;return r>0?`${h}h ${r}m`:`${h}h`;}
+function setOverrun(m){const el=document.getElementById('ot-display');el.textContent=fmtMins(m);el.dataset.mins=m;}
+let stepTimer;
+function stepOT(dir){
+  const cur=parseInt(document.getElementById('ot-display').dataset.mins)||0;
+  const next=Math.max(0,Math.min(cur+dir*5,480));
+  setOverrun(next);persist();
+}
+document.getElementById('ot-minus').addEventListener('click',()=>stepOT(-1));
+document.getElementById('ot-plus').addEventListener('click',()=>stepOT(1));
+// Hold to fast-change
+['ot-minus','ot-plus'].forEach(id=>{
+  const dir=id==='ot-plus'?1:-1;
+  const el=document.getElementById(id);
+  el.addEventListener('pointerdown',()=>{stepTimer=setInterval(()=>stepOT(dir),150);});
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>el.addEventListener(ev,()=>clearInterval(stepTimer)));
+});
+// Swap toggle
+document.getElementById('dp-swap').addEventListener('change',function(){
+  document.getElementById('swap-detail').style.display=this.checked?'flex':'none';
+  document.getElementById('swap-badge-wrap').style.display='none';
+  persist();
+});
+['dp-swap-name','dp-swap-note'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{
+  const hasName=document.getElementById('dp-swap-name').value.trim().length>0;
+  document.getElementById('swap-badge-wrap').style.display=document.getElementById('dp-swap').checked&&hasName?'block':'none';
+  persist();
+}));
+document.getElementById('dp-swap-dir').addEventListener('change',persist);
+document.getElementById('dp-station').addEventListener('input',persist);
+
+['dp-start','dp-finish','dp-bstart','dp-bend','break-type'].forEach(id=>document.getElementById(id).addEventListener('change',persist));
+document.getElementById('dp-late').addEventListener('change',function(){
+  document.getElementById('job-number-row').style.display=this.checked?'block':'none';
+  if(!this.checked)document.getElementById('dp-job-number').value='';
+  persist();
+});
+document.getElementById('dp-job-number').addEventListener('input',persist);
+
+function getSickPayEntitlement(startDateStr){
+  if(!startDateStr)return null;
+  const start=new Date(startDateStr);
+  const now=new Date();
+  const years=(now-start)/(1000*60*60*24*365.25);
+  if(years<1)return{full:1,half:2,label:'Under 1 year service'};
+  if(years<2)return{full:2,half:2,label:'1–2 years service'};
+  if(years<3)return{full:4,half:4,label:'2–3 years service'};
+  if(years<5)return{full:5,half:5,label:'3–5 years service'};
+  return{full:6,half:6,label:'5+ years service'};
+}
+
+function updateSickEntitlement(){
+  const val=document.getElementById('employment-start').value;
+  const el=document.getElementById('sick-entitlement-display');
+  if(!val){el.textContent='';return;}
+  const ent=getSickPayEntitlement(val);
+  el.innerHTML=`<strong>${ent.label}:</strong> ${ent.full} months full pay + ${ent.half} months half pay sick entitlement`;
+  el.style.color='var(--green)';
+}
+document.getElementById('employment-start').addEventListener('change',function(){updateSickEntitlement();saveSettings();});
+
+document.getElementById('dp-food').addEventListener('change',()=>{
+  document.getElementById('food-pill-wrap').style.display=document.getElementById('dp-food').checked?'block':'none';
+  persist();
+});
+document.getElementById('dp-notes').addEventListener('input',persist);
+document.getElementById('dp-close').addEventListener('click',()=>{
+  document.getElementById('detail').classList.remove('open');
+  selKey=null;render();
+});
+document.getElementById('prev').addEventListener('click',()=>{if(vM===0){vY--;vM=11;}else vM--;render();});
+document.getElementById('next').addEventListener('click',()=>{if(vM===11){vY++;vM=0;}else vM++;render();});
+
+function bandRate(){return BANDS[selBand][selPoint]||15.33;}
+function updateBandDisplay(){
+  const b=BANDS[selBand];
+  document.getElementById('rate-input').value=(b[selPoint]||b.entry).toFixed(2);
+  document.getElementById('enh-display').textContent=`+${Math.round(b.enh*100)}%`;
+}
+document.getElementById('sel-band').addEventListener('change',e=>{selBand=e.target.value;updateBandDisplay();saveSettings();updateSummary();render();});
+document.getElementById('sel-point').addEventListener('change',e=>{selPoint=e.target.value;updateBandDisplay();saveSettings();updateSummary();render();});
+document.getElementById('rate-input').addEventListener('input',()=>{saveSettings();updateSummary();render();});
+document.getElementById('rate-reset').addEventListener('click',()=>{updateBandDisplay();saveSettings();updateSummary();render();});
+
+function firstDow(y,m){let d=new Date(y,m,1).getDay();return d===0?6:d-1;}
+function daysIn(y,m){return new Date(y,m+1,0).getDate();}
+
+function render(){
+  const td=todayDK();
+  document.getElementById('month-label').textContent=`${MONTHS[vM]} ${vY}`;
+  const cal=document.getElementById('cal');cal.innerHTML='';
+  const fi=firstDow(vY,vM),di=daysIn(vY,vM);
+  for(let i=0;i<fi;i++){const e=document.createElement('div');e.className='cell empty';cal.appendChild(e);}
+  for(let d=1;d<=di;d++){
+    const key=dk(vY,vM,d),sh=getSh(key),t=sh.type;
+    const cell=document.createElement('div');
+    let cls='cell'+(t!=='none'?' '+t:'');
+    if(key===td)cls+=' is-today';
+    if(key===selKey)cls+=' selected';
+    cell.className=cls;
+    const hasT=sh.start&&sh.finish&&t!=='off'&&t!=='sick';
+    const inds=[(sh.overrunMins>0||sh.lateFinish)?'<div class="ind" style="background:#EF4444"></div>':'',sh.notes?'<div class="ind" style="background:#3B82F6"></div>':'',sh.foodAllowance?'<div class="ind" style="background:#10B981"></div>':'',sh.swapped?'<div class="ind" style="background:#F59E0B"></div>':''].filter(Boolean).join('');
+    const typeLabel=t==='days'?'Days':t==='nights'?'Nights':t==='off'?'Off':t==='sick'?'Sick':'';
+    cell.innerHTML=`<span class="cn">${d}</span>`+(t!=='none'?`<span class="cl">${typeLabel}</span>`:'')+  (hasT?`<span class="ct">${sh.start}–${sh.finish}</span>`:'')+  (sh.station&&t!=='none'&&t!=='off'&&t!=='sick'?`<span class="cs">${sh.station.slice(0,12)}</span>`:'')+  (inds?`<div class="cinds">${inds}</div>`:'');
+    cell.addEventListener('click',()=>openDetail(key,vY,vM,d));
+    cal.appendChild(cell);
+  }
+
+  let dc=0,nc=0,sc=0,socH=0,unsH=0,otMins=0,pay=0,sP=0,uP=0,oP=0,food=0;
+  const swapList=[];
+  for(let d=1;d<=di;d++){
+    const key=dk(vY,vM,d),sh=getSh(key);
+    if(sh.type==='days')dc++;else if(sh.type==='nights')nc++;else if(sh.type==='sick')sc++;
+    if(sh.type==='days'||sh.type==='nights'){
+      const p=calcPay(key,sh);
+      socH+=p.sH;unsH+=p.uH;otMins+=sh.overrunMins||0;
+      pay+=p.total;sP+=p.sP;uP+=p.uP;oP+=p.oP;
+      if(sh.foodAllowance)food++;
+    }
+    if(sh.swapped&&sh.swapWith)swapList.push({d,sh});
+  }
+  const totH=socH+unsH;const r=v=>Math.round(v*10)/10;
+  document.getElementById('s-days').textContent=dc;
+  document.getElementById('s-nights').textContent=nc;
+  document.getElementById('s-sick').textContent=sc;
+  document.getElementById('s-soc').textContent=r(socH);
+  document.getElementById('s-uns').textContent=r(unsH);
+  document.getElementById('s-unsp').textContent=totH>0?`${Math.round(unsH/totH*100)}% of hours`:'';
+  document.getElementById('s-ot').textContent=fmtMins(otMins);
+  document.getElementById('s-food').textContent=`£${(food*7.5).toFixed(2)}`;
+  document.getElementById('s-pay').textContent=`£${pay.toFixed(2)}`;
+  document.getElementById('s-pay-brk').textContent=`£${sP.toFixed(2)} social · £${uP.toFixed(2)} unsocial · £${oP.toFixed(2)} OT`;
+  document.getElementById('stats-title').textContent=`${MONTHS[vM]} stats`;
+
+  // Swap list
+  const swapContainer=document.getElementById('swaps-list');
+  document.getElementById('swaps-title').textContent=`Shift swaps — ${MONTHS[vM]}`;
+  if(swapList.length===0){
+    swapContainer.innerHTML='<div style="font-size:13px;color:var(--txt3);padding:4px 0">No shift swaps logged this month.</div>';
+  } else {
+    const dirLabel={working:'I work their shift',giving:'They work my shift',even:'Even swap'};
+    swapContainer.innerHTML=swapList.map(({d,sh})=>`
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px">
+        <div style="background:#FFF3CD;color:#856404;border-radius:8px;padding:6px 8px;text-align:center;min-width:44px;flex-shrink:0">
+          <div style="font-size:16px;font-weight:700;font-family:'DM Mono',monospace">${d}</div>
+          <div style="font-size:9px;font-weight:600;text-transform:uppercase">${MONTHS[vM].slice(0,3)}</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:var(--txt1)">⇄ ${sh.swapWith}</div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:2px">${dirLabel[sh.swapDir]||''} ${sh.type==='days'?'· ☀ Days':'· 🌙 Nights'} ${sh.start?`· ${sh.start}`:''}</div>
+          ${sh.station?`<div style="font-size:11px;color:var(--txt3)">📍 ${sh.station}</div>`:''}
+          ${sh.swapNote?`<div style="font-size:11px;color:var(--txt3);font-style:italic;margin-top:2px">"${sh.swapNote}"</div>`:''}
+        </div>
+      </div>`).join('');
+  }
+
+  const ts=getSh(td);
+  const tsEl=document.getElementById('today-status');
+  if(ts.type==='none')tsEl.innerHTML=`<span style="color:var(--txt3)">No shift set — tap today on the calendar to add</span>`;
+  else if(ts.type==='sick')tsEl.innerHTML=`<span class="badge sick">🤒 Off Sick</span><div style="font-size:12px;color:var(--txt3);margin-top:4px">Recorded as sick — check shift detail for sick pay entitlement</div>`+(ts.notes?`<div style="font-size:12px;color:var(--txt3);margin-top:4px;font-style:italic">"${ts.notes.slice(0,60)}${ts.notes.length>60?'…':''}"</div>`:'');
+  else{
+    const p=calcPay(td,ts);
+    const tl=shiftTL(ts.start,ts.finish);
+    tsEl.innerHTML=`<span class="badge ${ts.type}">${ts.type==='days'?'☀ Days':'🌙 Nights'}</span>`
+      +(ts.station?` &nbsp;<span style="font-size:12px;color:var(--txt3)">📍 ${ts.station}</span>`:'')
+      +(p.total>0?` &nbsp;&nbsp;Est. <strong>£${p.total.toFixed(2)}</strong>`:'')
+      +(ts.lateFinish?' &nbsp;· Late finish':'')
+      +(ts.swapped&&ts.swapWith?`<div style="font-size:12px;color:var(--amber);margin-top:3px">⇄ Swapped with ${ts.swapWith}</div>`:'')
+      +(tl?`<div style="font-size:12px;color:var(--txt3);margin-top:4px">Break window ${tl.bwS}–${tl.bwE} &nbsp;·&nbsp; EoS protection from ${tl.e60}</div>`:'')
+      +(ts.notes?`<div style="font-size:12px;color:var(--txt3);margin-top:4px;font-style:italic">"${ts.notes.slice(0,60)}${ts.notes.length>60?'…':''}"</div>`:'');
+  }
+
+  let found=false;
+  const nextEl=document.getElementById('next-shift');
+  for(let i=1;i<=60;i++){
+    const d2=new Date(now);d2.setDate(now.getDate()+i);
+    const k2=dk(d2.getFullYear(),d2.getMonth(),d2.getDate()),s2=getSh(k2);
+    if(s2.type==='days'||s2.type==='nights'){
+      const p2=calcPay(k2,s2),tl2=shiftTL(s2.start,s2.finish);
+      nextEl.innerHTML=`In ${i} day${i>1?'s':''} &nbsp;<span class="badge ${s2.type}">${s2.type==='days'?'☀ Days':'🌙 Nights'}</span>`
+        +(s2.start?` &nbsp;${s2.start}`:'')+(p2.total>0?` &nbsp;· Est. £${p2.total.toFixed(2)}`:'')
+        +(tl2?`<div style="font-size:12px;color:var(--txt3);margin-top:4px">Break window ${tl2.bwS}–${tl2.bwE} &nbsp;·&nbsp; EoS protection from ${tl2.e60}</div>`:'');
+      found=true;break;
+    }
+  }
+  if(!found)nextEl.innerHTML=`<span style="color:var(--txt3)">No upcoming shifts logged</span>`;
+}
+
+function saveData(){
+  try{localStorage.setItem('sl-shifts',JSON.stringify(shifts));}catch{}
+}
+function saveSettings(){
+  try{localStorage.setItem('sl-settings',JSON.stringify({band:selBand,point:selPoint,rate:document.getElementById('rate-input').value,empStart:document.getElementById('employment-start').value}));}catch{}
+}
+function load(){
+  try{const s=localStorage.getItem('sl-shifts');if(s)shifts=JSON.parse(s);}catch{}
+  try{const s=localStorage.getItem('sl-settings');if(s){const c=JSON.parse(s);selBand=c.band||'5';selPoint=c.point||'entry';document.getElementById('sel-band').value=selBand;document.getElementById('sel-point').value=selPoint;updateBandDisplay();if(c.rate)document.getElementById('rate-input').value=c.rate;if(c.empStart){document.getElementById('employment-start').value=c.empStart;updateSickEntitlement();}}}catch{}
+  updateBandDisplay();render();
+}
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+load();
+</script>
+</body>
+</html>
