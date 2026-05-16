@@ -51,6 +51,63 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; background: var(--bg); font-family: 'Inter', system-ui, sans-serif; color: var(--txt1); overflow-x: hidden; }
 body { padding-bottom: calc(70px + var(--safe-bottom)); }
+
+/* ── INSTALL BANNER ── */
+#install-banner {
+  display: none;
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 9999;
+  align-items: flex-end;
+  justify-content: center;
+}
+#install-banner.show { display: flex; }
+.install-sheet {
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+  width: 100%;
+  max-width: 480px;
+}
+.install-logo {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+}
+.install-logo-icon {
+  width: 52px; height: 52px; border-radius: 12px;
+  background: var(--nhs);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+}
+.install-logo-name { font-size: 22px; font-weight: 700; color: var(--txt1); }
+.install-logo-name span { color: #005EB8; }
+.install-title { font-size: 17px; font-weight: 700; color: var(--txt1); margin-bottom: 6px; }
+.install-sub { font-size: 13px; color: var(--txt2); line-height: 1.55; margin-bottom: 18px; }
+.install-steps { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
+.install-step { display: flex; align-items: flex-start; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--txt2); line-height: 1.4; }
+.install-step:last-child { border-bottom: none; }
+.install-step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--nhs); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.install-step strong { color: var(--txt1); }
+/* Android Chrome install button */
+#btn-install-android {
+  display: none;
+  width: 100%; padding: 14px; background: var(--nhs); color: #fff;
+  border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
+  cursor: pointer; margin-bottom: 10px;
+}
+#btn-install-android.show { display: block; }
+.install-dismiss {
+  width: 100%; padding: 12px; background: transparent; color: var(--txt3);
+  border: 1px solid var(--border2); border-radius: 12px;
+  font-size: 13px; cursor: pointer; font-weight: 500;
+}
+.install-warn {
+  background: #FFF7ED; border: 1px solid #FB923C; border-radius: 8px;
+  padding: 8px 12px; font-size: 11px; color: #9A3412; margin-bottom: 14px; line-height: 1.5;
+}
+@media (prefers-color-scheme: dark) {
+  .install-warn { background: #3c1a09; color: #FDBA74; border-color: #9A3412; }
+}
+
 .header { position: sticky; top: 0; z-index: 100; background: var(--nhs); padding: calc(var(--safe-top) + 12px) 16px 12px; box-shadow: 0 2px 8px rgba(0,48,135,0.4); }
 .header-inner { display: flex; align-items: center; justify-content: space-between; }
 .app-name { font-size: 20px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
@@ -99,9 +156,12 @@ body { padding-bottom: calc(70px + var(--safe-bottom)); }
 .ind { width: 4px; height: 4px; border-radius: 50%; }
 .detail-panel { margin: 0; background: var(--surface); border-top: 1px solid var(--border); border-bottom: 3px solid var(--blue); display: none; }
 .detail-panel.open { display: block; }
-.dp-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); }
-.dp-title { font-size: 15px; font-weight: 600; color: var(--txt1); }
-.dp-close { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border2); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; color: var(--txt2); background: var(--surface); }
+.dp-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); gap: 8px; }
+.dp-title { font-size: 15px; font-weight: 600; color: var(--txt1); flex: 1; text-align: center; }
+.dp-day-nav { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border2); background: var(--surface); color: var(--txt1); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.dp-day-nav:active { background: var(--border); }
+.dp-close { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border2); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; color: var(--txt2); background: var(--surface); flex-shrink: 0; }
+.dp-close:active { background: var(--border); }
 .tab-bar { display: flex; border-bottom: 1px solid var(--border); background: var(--surface2); overflow-x: auto; }
 .tab-bar::-webkit-scrollbar { display: none; }
 .tab-btn { flex: 1; min-width: 65px; padding: 10px 4px; font-size: 11px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--txt3); border-bottom: 2px solid transparent; white-space: nowrap; text-align: center; transition: all 0.15s; }
@@ -216,6 +276,51 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
 </style>
 </head>
 <body>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- INSTALL BANNER                              -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="install-banner">
+  <div class="install-sheet">
+    <div class="install-logo">
+      <div class="install-logo-icon">🚑</div>
+      <div>
+        <div class="install-logo-name">Kinetic<span>Shift</span></div>
+        <div style="font-size:12px;color:var(--txt3)">NHS AfC Shift Pay Calculator</div>
+      </div>
+    </div>
+    <div class="install-title">Install the app to protect your data</div>
+    <div class="install-sub">Using KineticShift in a browser tab means your shifts can be lost if the browser clears its storage. Install it to your home screen — it takes 10 seconds and your data will be safe.</div>
+    <div class="install-warn">⚠️ <strong>Don't skip this.</strong> Months of shift data can disappear overnight if the browser decides to clear its cache. Installed apps are protected.</div>
+
+    <!-- Android Chrome: native install button -->
+    <button id="btn-install-android">📲 Install KineticShift</button>
+
+    <!-- iOS instructions -->
+    <div id="ios-steps" style="display:none">
+      <div class="install-steps">
+        <div class="install-step"><div class="install-step-num">1</div><div>Tap the <strong>Share button</strong> at the bottom of your screen <strong>⬆</strong></div></div>
+        <div class="install-step"><div class="install-step-num">2</div><div>Scroll down and tap <strong>"Add to Home Screen"</strong></div></div>
+        <div class="install-step"><div class="install-step-num">3</div><div>Tap <strong>Add</strong> — KineticShift will appear on your home screen like a normal app</div></div>
+      </div>
+    </div>
+
+    <!-- Generic / desktop instructions -->
+    <div id="generic-steps" style="display:none">
+      <div class="install-steps">
+        <div class="install-step"><div class="install-step-num">1</div><div>In Chrome: tap the <strong>three-dot menu ⋮</strong> at the top right</div></div>
+        <div class="install-step"><div class="install-step-num">2</div><div>Tap <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong></div></div>
+        <div class="install-step"><div class="install-step-num">3</div><div>Tap <strong>Install</strong> — your shifts will be safe from now on</div></div>
+      </div>
+    </div>
+
+    <button class="install-dismiss" id="btn-install-dismiss">I'll do it later (data may be lost)</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- MAIN APP                                    -->
+<!-- ═══════════════════════════════════════════ -->
 <div class="header">
   <div class="nhs-strip" style="margin: calc(-12px - var(--safe-top)) -16px 12px; padding: 6px 16px;">
     <div class="nhs-strip-txt">SOUTH WESTERN AMBULANCE SERVICE NHS FOUNDATION TRUST — GLOUCESTERSHIRE</div>
@@ -254,7 +359,9 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
 
 <div class="detail-panel" id="detail">
   <div class="dp-header">
+    <button class="dp-day-nav" id="dp-prev-day">‹</button>
     <div class="dp-title" id="dp-title"></div>
+    <button class="dp-day-nav" id="dp-next-day">›</button>
     <button class="dp-close" id="dp-close">✕</button>
   </div>
   <div class="tab-bar">
@@ -389,7 +496,7 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
 
 <div class="section">
   <div class="sec-title">Today &amp; next shift</div>
-  <div id="timesheet-reminder" style="display:none;background:#FEF3C7;border:2px solid #F59E0B;border-radius:12px;padding:14px;margin-bottom:8px;display:none;align-items:center;gap:12px">
+  <div id="timesheet-reminder" style="display:none;background:#FEF3C7;border:2px solid #F59E0B;border-radius:12px;padding:14px;margin-bottom:8px;align-items:center;gap:12px">
     <div style="font-size:28px">📋</div>
     <div>
       <div style="font-size:14px;font-weight:700;color:#92400E">Don't Forget Your Timesheet!</div>
@@ -437,9 +544,11 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
     <div style="font-size:22px;flex-shrink:0">⚠️</div>
     <div>
       <div style="font-size:13px;font-weight:700;color:#92400E;margin-bottom:4px">Your data is stored on this device only</div>
-      <div style="font-size:12px;color:#92400E;line-height:1.6">If you clear your browser, uninstall the app, or switch devices — your shifts will be lost. <strong>Export regularly to keep a backup.</strong></div>
+      <div style="font-size:12px;color:#92400E;line-height:1.6">If you clear your browser, uninstall the app, or switch devices — your shifts will be lost. <strong>Install the app and export regularly to keep a backup.</strong></div>
     </div>
   </div>
+  <!-- Install reminder button (shown only when not installed) -->
+  <button id="btn-install-reminder" style="display:none;width:100%;padding:12px 16px;background:#003087;color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:10px;display:none;align-items:center;justify-content:center;gap:8px">📲 Install KineticShift (recommended)</button>
   <div style="display:flex;gap:10px;flex-wrap:wrap">
     <button id="btn-export" style="flex:1;min-width:120px;padding:12px 16px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">📊 Export to Excel</button>
     <button id="btn-backup" style="flex:1;min-width:120px;padding:12px 16px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">💾 Save App Backup</button>
@@ -464,7 +573,6 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
         <button class="cbtn" data-contract="bank" id="ct-bank">🏦 Bank Staff<br><span style="font-size:10px;font-weight:400">Ad hoc shifts</span></button>
       </div>
     </div>
-
     <div class="dp-row">
       <div class="settings-label">Base station</div>
       <input type="text" id="set-base-station" class="txt-input" placeholder="e.g. Gloucester, Cheltenham...">
@@ -516,6 +624,76 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
 </div>
 
 <script>
+// ═══════════════════════════════════════════════════
+// PWA INSTALL LOGIC
+// ═══════════════════════════════════════════════════
+let deferredPrompt = null;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInStandaloneMode = () =>
+  window.navigator.standalone === true ||
+  window.matchMedia('(display-mode: standalone)').matches;
+
+function showInstallBanner() {
+  const banner = document.getElementById('install-banner');
+  if (isIOS) {
+    document.getElementById('ios-steps').style.display = 'block';
+  } else if (!deferredPrompt) {
+    document.getElementById('generic-steps').style.display = 'block';
+  }
+  banner.classList.add('show');
+}
+
+function hideInstallBanner() {
+  document.getElementById('install-banner').classList.remove('show');
+  // Remember they dismissed — show again in 3 days
+  localStorage.setItem('ks-install-dismissed', Date.now().toString());
+}
+
+// Catch the Chrome/Android install prompt
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('btn-install-android').classList.add('show');
+  document.getElementById('btn-install-reminder').style.display = 'flex';
+});
+
+document.getElementById('btn-install-android').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  if (outcome === 'accepted') hideInstallBanner();
+});
+
+document.getElementById('btn-install-dismiss').addEventListener('click', hideInstallBanner);
+
+document.getElementById('btn-install-reminder').addEventListener('click', () => {
+  showInstallBanner();
+});
+
+// Show banner on first visit (or after 3 days if dismissed)
+window.addEventListener('load', () => {
+  if (isInStandaloneMode()) return; // Already installed — never show
+  const dismissed = parseInt(localStorage.getItem('ks-install-dismissed') || '0');
+  const threeDays = 3 * 24 * 60 * 60 * 1000;
+  if (!dismissed || (Date.now() - dismissed) > threeDays) {
+    setTimeout(showInstallBanner, 800); // slight delay so app loads first
+  }
+  // Show reminder button in data section if not installed
+  if (!isInStandaloneMode()) {
+    document.getElementById('btn-install-reminder').style.display = 'flex';
+  }
+});
+
+window.addEventListener('appinstalled', () => {
+  hideInstallBanner();
+  document.getElementById('btn-install-reminder').style.display = 'none';
+  deferredPrompt = null;
+});
+
+// ═══════════════════════════════════════════════════
+// APP LOGIC
+// ═══════════════════════════════════════════════════
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS_FULL=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 const BANDS={
@@ -544,37 +722,30 @@ function todayDK(){return dk(now.getFullYear(),now.getMonth(),now.getDate());}
 function defSh(){return{type:'none',start:'',finish:'',overrunMins:0,lateFinish:false,jobNumber:'',foodAllowance:false,notes:'',station:'',diffStation:false,swapped:false,swapWith:'',swapDir:'working',swapNote:'',sickScenario:'before',sickLeftTime:'',mileHome:0,mileBase:0};}
 function getSh(k){return Object.assign({},defSh(),shifts[k]||{});}
 function getRate(){return parseFloat(document.getElementById('rate-input').value)||BANDS[selBand][selPoint]||14.23;}
-function getEnh(){return BANDS[selBand].enhNS||0.30;}
 
-// FIXED: SWAST break policy — under 6h=0, 6-12h=30min, 12h=60min
 function swastBreakMins(totalHours){
   if(totalHours<6)return 0;
   if(totalHours<12)return 30;
   return 60;
 }
 
-// Returns {nightSatMins, sunMins} separately for correct enhancement rates
 function calcUnsocPeriods(dKey,s,f){
   if(!s||!f)return{nightSatMins:0,sunMins:0};
   const[y,m,d]=dKey.split('-').map(Number);
-  const dow=new Date(y,m-1,d).getDay(); // 0=Sun,6=Sat
+  const dow=new Date(y,m-1,d).getDay();
   const sm=toMins(s);let fm=toMins(f);if(fm<=sm)fm+=1440;
   let nightSat=0,sun=0;
   for(let t=sm;t<fm;t+=15){
-    const cd=(dow+Math.floor(t/1440))%7; // current day of week
-    const tid=t%1440; // time within day
-    if(cd===0){sun+=15;} // Sunday — all hours
-    else if(cd===6){nightSat+=15;} // Saturday — all hours
-    else if(tid<360||tid>=1200){nightSat+=15;} // Weekday night: before 6am or after 8pm
+    const cd=(dow+Math.floor(t/1440))%7;
+    const tid=t%1440;
+    if(cd===0){sun+=15;}
+    else if(cd===6){nightSat+=15;}
+    else if(tid<360||tid>=1200){nightSat+=15;}
   }
   const total=fm-sm;
-  return{
-    nightSatMins:Math.min(nightSat,total),
-    sunMins:Math.min(sun,total)
-  };
+  return{nightSatMins:Math.min(nightSat,total),sunMins:Math.min(sun,total)};
 }
 
-// Keep old function for backward compat (used in sick late scenario)
 function calcUnsocMins(dKey,s,f){
   const p=calcUnsocPeriods(dKey,s,f);
   return p.nightSatMins+p.sunMins;
@@ -593,17 +764,14 @@ function calcPay(dKey,sh){
   const rate=getRate();
   const enhNS=BANDS[selBand].enhNS||0.30;
   const enhSun=BANDS[selBand].enhSun||0.60;
-  // Basic pay covers ALL hours, enhancements are top-ups
   const basicP=worked*rate;
   const nsP=nsH*rate*enhNS;
   const sunP=sunH*rate*enhSun;
   const oP=ot*rate*1.5;
   const total=basicP+nsP+sunP+oP;
-  // For display purposes
   return{g,brk,brkMins,worked,nsH,sunH,socH,nsP,sunP,oP,basicP,total,rate,enhNS,enhSun};
 }
 
-// FIXED: Sick pay = basic rate x 7.5hrs, no unsocial
 function calcSickPay(){const rate=getRate();return{dailyPay:rate*7.5,rate};}
 
 function getSickPayEntitlement(startDateStr){
@@ -687,8 +855,8 @@ function updateSummary(){
           <div class="ibox green"><strong>✓ Not a sick day</strong> — more than halfway through. Full pay for hours worked.</div>
           <div class="sbox">
             <div class="srow"><span class="slbl">Hours worked</span><span class="sval">${fH(p.worked)}</span></div>
-            <div class="srow"><span class="slbl">Social pay</span><span class="sval">${fp(p.sP)}</span></div>
-            <div class="srow"><span class="slbl">Unsocial pay</span><span class="sval blu">${fp(p.uP)}</span></div>
+            <div class="srow"><span class="slbl">Basic pay</span><span class="sval">${fp(p.basicP)}</span></div>
+            <div class="srow"><span class="slbl">Unsocial pay</span><span class="sval blu">${fp(p.nsP+p.sunP)}</span></div>
             <div class="srow"><span class="slbl">Estimated pay</span><span class="sval big grn">${fp(p.total)}</span></div>
           </div>`;
       } else {
@@ -862,6 +1030,17 @@ document.getElementById('dp-food').addEventListener('change',()=>{
 });
 document.getElementById('dp-notes').addEventListener('input',persist);
 document.getElementById('dp-close').addEventListener('click',()=>{document.getElementById('detail').classList.remove('open');selKey=null;render();});
+
+function navigateDay(dir){
+  if(!selKey)return;
+  const[y,m,d]=selKey.split('-').map(Number);
+  const date=new Date(y,m-1,d);
+  date.setDate(date.getDate()+dir);
+  const newKey=dk(date.getFullYear(),date.getMonth(),date.getDate());
+  openDetail(newKey,date.getFullYear(),date.getMonth(),date.getDate());
+}
+document.getElementById('dp-prev-day').addEventListener('click',()=>navigateDay(-1));
+document.getElementById('dp-next-day').addEventListener('click',()=>navigateDay(1));
 document.getElementById('prev').addEventListener('click',()=>{if(vM===0){vY--;vM=11;}else vM--;render();});
 document.getElementById('next').addEventListener('click',()=>{if(vM===11){vY++;vM=0;}else vM++;render();});
 
@@ -957,15 +1136,10 @@ function render(){
     (sickPay>0?` · £${sickPay.toFixed(2)} sick`:'')+(alPay>0?` · £${alPay.toFixed(2)} A/L`:'');
   document.getElementById('stats-title').textContent=`${MONTHS[vM]} stats`;
 
-  // Timesheet reminder — show in last 2 days of month
   const todayDate=now.getDate();
   const daysInThisMonth=daysIn(now.getFullYear(),now.getMonth());
   const reminderEl=document.getElementById('timesheet-reminder');
-  if(todayDate>=daysInThisMonth-1){
-    reminderEl.style.display='flex';
-  } else {
-    reminderEl.style.display='none';
-  }
+  reminderEl.style.display=todayDate>=daysInThisMonth-1?'flex':'none';
 
   const ts=getSh(td);const tsEl=document.getElementById('today-status');
   if(ts.type==='none'){tsEl.innerHTML=`<span style="color:var(--txt3)">No shift set — tap today to add</span>`;}
@@ -996,17 +1170,17 @@ function render(){
   if(!found)nextEl.innerHTML=`<span style="color:var(--txt3)">No upcoming shifts logged</span>`;
 }
 
-function saveData(){try{localStorage.setItem('ks-shifts',JSON.stringify(shifts));}catch{}}
+function saveData(){try{localStorage.setItem('ks-shifts',JSON.stringify(shifts));}catch(e){}}
 function saveSettings(){
   try{localStorage.setItem('ks-settings',JSON.stringify({
     band:selBand,point:selPoint,rate:document.getElementById('rate-input').value,
     empStart:document.getElementById('employment-start').value,contractType,
     baseStation:document.getElementById('set-base-station').value,
     homePostcode:document.getElementById('set-home-postcode').value
-  }));}catch{}
+  }));}catch(e){}
 }
 function load(){
-  try{const s=localStorage.getItem('ks-shifts');if(s)shifts=JSON.parse(s);}catch{}
+  try{const s=localStorage.getItem('ks-shifts');if(s)shifts=JSON.parse(s);}catch(e){}
   try{
     const s=localStorage.getItem('ks-settings');
     if(s){
@@ -1024,23 +1198,19 @@ function load(){
       if(c.baseStation)document.getElementById('set-base-station').value=c.baseStation;
       if(c.homePostcode)document.getElementById('set-home-postcode').value=c.homePostcode;
     }
-  }catch{}
+  }catch(e){}
   updateBandDisplay();render();
 }
+
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
 
 // Save App Backup
 document.getElementById('btn-backup').addEventListener('click',()=>{
   const payload=JSON.stringify({
-    version:1,
-    app:'KineticShift',
-    savedAt:new Date().toISOString(),
-    shifts,
+    version:1,app:'KineticShift',savedAt:new Date().toISOString(),shifts,
     settings:{
-      band:selBand,point:selPoint,
-      rate:document.getElementById('rate-input').value,
-      empStart:document.getElementById('employment-start').value,
-      contractType,
+      band:selBand,point:selPoint,rate:document.getElementById('rate-input').value,
+      empStart:document.getElementById('employment-start').value,contractType,
       baseStation:document.getElementById('set-base-station').value,
       homePostcode:document.getElementById('set-home-postcode').value
     }
@@ -1058,9 +1228,7 @@ document.getElementById('btn-backup').addEventListener('click',()=>{
 });
 
 // Restore App Backup
-document.getElementById('btn-restore-trigger').addEventListener('click',()=>{
-  document.getElementById('btn-restore').click();
-});
+document.getElementById('btn-restore-trigger').addEventListener('click',()=>{document.getElementById('btn-restore').click();});
 document.getElementById('btn-restore').addEventListener('change',function(){
   const file=this.files[0];if(!file)return;
   const reader=new FileReader();
@@ -1070,7 +1238,7 @@ document.getElementById('btn-restore').addEventListener('change',function(){
       const data=JSON.parse(e.target.result);
       if(data.app!=='KineticShift'||!data.shifts){throw new Error('Invalid');}
       const savedDate=data.savedAt?new Date(data.savedAt).toLocaleDateString('en-GB'):'unknown date';
-      if(!confirm(`Restore backup from ${savedDate}?\n\nThis will REPLACE all your current data with the backup. This cannot be undone.`)){return;}
+      if(!confirm(`Restore backup from ${savedDate}?\n\nThis will REPLACE all your current data. This cannot be undone.`)){return;}
       shifts=data.shifts||{};
       saveData();
       if(data.settings){
@@ -1079,22 +1247,17 @@ document.getElementById('btn-restore').addEventListener('change',function(){
         if(c.point){selPoint=c.point;document.getElementById('sel-point').value=selPoint;}
         if(c.rate)document.getElementById('rate-input').value=c.rate;
         if(c.empStart){document.getElementById('employment-start').value=c.empStart;updateSickEntitlement();}
-        if(c.contractType){
-          contractType=c.contractType;
-          document.querySelectorAll('.cbtn').forEach(b=>b.classList.toggle('active',b.dataset.contract===contractType));
-        }
+        if(c.contractType){contractType=c.contractType;document.querySelectorAll('.cbtn').forEach(b=>b.classList.toggle('active',b.dataset.contract===contractType));}
         if(c.baseStation)document.getElementById('set-base-station').value=c.baseStation;
         if(c.homePostcode)document.getElementById('set-home-postcode').value=c.homePostcode;
         updateBandDisplay();saveSettings();
       }
       render();
-      status.style.display='block';
-      status.style.background='#ECFDF5';status.style.color='#065F46';status.style.border='1px solid #6EE7B7';
+      status.style.display='block';status.style.background='#ECFDF5';status.style.color='#065F46';status.style.border='1px solid #6EE7B7';
       status.textContent='✅ Backup restored successfully! All your shifts are back.';
       setTimeout(()=>{status.style.display='none';},5000);
     }catch(err){
-      status.style.display='block';
-      status.style.background='#FEF2F2';status.style.color='#991B1B';status.style.border='1px solid #FCA5A5';
+      status.style.display='block';status.style.background='#FEF2F2';status.style.color='#991B1B';status.style.border='1px solid #FCA5A5';
       status.textContent='❌ Invalid backup file — please use a KineticShift .ksbackup file.';
       setTimeout(()=>{status.style.display='none';},5000);
     }
@@ -1103,26 +1266,16 @@ document.getElementById('btn-restore').addEventListener('change',function(){
   reader.readAsText(file);
 });
 
-
+// Export to Excel
 document.getElementById('btn-export').addEventListener('click',()=>{
-  if(Object.keys(shifts).length===0){
-    alert('No shifts to export yet — add some shifts first!');return;
-  }
-
-  // Build SheetJS dynamically
+  if(Object.keys(shifts).length===0){alert('No shifts to export yet — add some shifts first!');return;}
   const script=document.createElement('script');
   script.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
   script.onload=function(){
     const wb=XLSX.utils.book_new();
-
-    // ── SHEET 1: Shift Log ──
-    const shiftRows=[];
-    const headers=['Date','Day','Shift Type','Station','Start','Finish','Paid Hours','Basic Pay (£)','Night/Sat Enh (£)','Sunday/BH Enh (£)','Overrun Mins','Overrun Pay (£)','Est. Gross Pay (£)','Food Allowance','Mileage Claim (£)','Sick Scenario','Notes','Swap With'];
-    shiftRows.push(headers);
-
+    const shiftRows=[['Date','Day','Shift Type','Station','Start','Finish','Paid Hours','Basic Pay (£)','Night/Sat Enh (£)','Sunday/BH Enh (£)','Overrun Mins','Overrun Pay (£)','Est. Gross Pay (£)','Food Allowance','Mileage Claim (£)','Sick Scenario','Notes','Swap With']];
     const keys=Object.keys(shifts).sort();
     let totalBasic=0,totalNS=0,totalSun=0,totalOT=0,totalGross=0,totalFood=0,totalMile=0;
-
     keys.forEach(k=>{
       const sh=shifts[k];
       const[y,m,d]=k.split('-').map(Number);
@@ -1130,118 +1283,36 @@ document.getElementById('btn-export').addEventListener('click',()=>{
       const dayName=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dateObj.getDay()];
       const dateStr=`${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
       const typeLabel={days:'Days',nights:'Nights',rrv:'RRV',surge:'Surge',manager:'Manager',off:'Off',sick:'Sick','annual-leave':'Annual Leave'}[sh.type]||sh.type||'';
-
       let basicP=0,nsP=0,sunP=0,otP=0,gross=0,paidH=0;
       if(sh.type==='days'||sh.type==='nights'||sh.type==='rrv'||sh.type==='surge'||sh.type==='manager'){
-        const p=calcPay(k,sh);
-        paidH=Math.round(p.worked*100)/100;
-        basicP=Math.round(p.basicP*100)/100;
-        nsP=Math.round(p.nsP*100)/100;
-        sunP=Math.round(p.sunP*100)/100;
-        otP=Math.round(p.oP*100)/100;
-        gross=Math.round(p.total*100)/100;
-        totalBasic+=basicP;totalNS+=nsP;totalSun+=sunP;totalOT+=otP;totalGross+=gross;
+        const p=calcPay(k,sh);paidH=Math.round(p.worked*100)/100;basicP=Math.round(p.basicP*100)/100;
+        nsP=Math.round(p.nsP*100)/100;sunP=Math.round(p.sunP*100)/100;otP=Math.round(p.oP*100)/100;
+        gross=Math.round(p.total*100)/100;totalBasic+=basicP;totalNS+=nsP;totalSun+=sunP;totalOT+=otP;totalGross+=gross;
       } else if(sh.type==='sick'&&sh.sickScenario!=='late'){
-        const sp=calcSickPay();
-        gross=Math.round(sp.dailyPay*100)/100;
-        totalGross+=gross;
+        const sp=calcSickPay();gross=Math.round(sp.dailyPay*100)/100;totalGross+=gross;
       } else if(sh.type==='annual-leave'){
-        const sp=calcSickPay();
-        gross=Math.round(sp.dailyPay*100)/100;
-        totalGross+=gross;
+        const sp=calcSickPay();gross=Math.round(sp.dailyPay*100)/100;totalGross+=gross;
       }
-
-      const food=sh.foodAllowance?7.50:0;
-      if(food)totalFood+=food;
-
+      const food=sh.foodAllowance?7.50:0;if(food)totalFood+=food;
       let mileage=0;
-      if(sh.diffStation&&sh.mileHome>0&&sh.mileBase>0){
-        mileage=Math.round(Math.min(sh.mileHome,sh.mileBase)*0.45*100)/100;
-        totalMile+=mileage;
-      }
-
+      if(sh.diffStation&&sh.mileHome>0&&sh.mileBase>0){mileage=Math.round(Math.min(sh.mileHome,sh.mileBase)*0.45*100)/100;totalMile+=mileage;}
       const sickLabel=sh.type==='sick'?({before:'Before shift',early:'During — early',late:'During — late (full pay)'}[sh.sickScenario]||''):'';
-
-      shiftRows.push([
-        dateStr, dayName, typeLabel,
-        sh.station||'', sh.start||'', sh.finish||'',
-        paidH||'', basicP||'', nsP||'', sunP||'',
-        sh.overrunMins||0, otP||'',
-        gross||'',
-        sh.foodAllowance?'Yes':'',
-        mileage||'',
-        sickLabel,
-        sh.notes||'',
-        sh.swapWith||''
-      ]);
+      shiftRows.push([dateStr,dayName,typeLabel,sh.station||'',sh.start||'',sh.finish||'',paidH||'',basicP||'',nsP||'',sunP||'',sh.overrunMins||0,otP||'',gross||'',sh.foodAllowance?'Yes':'',mileage||'',sickLabel,sh.notes||'',sh.swapWith||'']);
     });
-
-    // Totals row
     shiftRows.push([]);
-    shiftRows.push(['TOTALS','','','','','','',
-      Math.round(totalBasic*100)/100,
-      Math.round(totalNS*100)/100,
-      Math.round(totalSun*100)/100,
-      '','',
-      Math.round(totalGross*100)/100,
-      `£${totalFood.toFixed(2)}`,
-      Math.round(totalMile*100)/100,
-      '','',''
-    ]);
-
+    shiftRows.push(['TOTALS','','','','','','',Math.round(totalBasic*100)/100,Math.round(totalNS*100)/100,Math.round(totalSun*100)/100,'','',Math.round(totalGross*100)/100,`£${totalFood.toFixed(2)}`,Math.round(totalMile*100)/100,'','','']);
     const ws=XLSX.utils.aoa_to_sheet(shiftRows);
-
-    // Column widths
-    ws['!cols']=[
-      {wch:12},{wch:11},{wch:14},{wch:16},{wch:7},{wch:7},
-      {wch:11},{wch:14},{wch:16},{wch:18},
-      {wch:12},{wch:13},{wch:16},
-      {wch:14},{wch:14},{wch:20},{wch:30},{wch:14}
-    ];
-
+    ws['!cols']=[{wch:12},{wch:11},{wch:14},{wch:16},{wch:7},{wch:7},{wch:11},{wch:14},{wch:16},{wch:18},{wch:12},{wch:13},{wch:16},{wch:14},{wch:14},{wch:20},{wch:30},{wch:14}];
     XLSX.utils.book_append_sheet(wb,ws,'Shift Log');
-
-    // ── SHEET 2: Summary ──
-    const band=BANDS[selBand];
-    const rate=getRate();
-    const summaryRows=[
-      ['KineticShift — Pay Summary'],
-      [],
-      ['Exported',new Date().toLocaleDateString('en-GB')],
-      ['Pay Band',`Band ${selBand}`],
-      ['Pay Point',selPoint],
-      ['Hourly Rate',`£${rate.toFixed(2)}`],
-      ['Night/Sat Enhancement',`+${Math.round(band.enhNS*100)}%`],
-      ['Sunday/BH Enhancement',`+${Math.round(band.enhSun*100)}%`],
-      [],
-      ['TOTALS',''],
-      ['Basic Pay',`£${totalBasic.toFixed(2)}`],
-      ['Night/Sat Enhancements',`£${totalNS.toFixed(2)}`],
-      ['Sunday/BH Enhancements',`£${totalSun.toFixed(2)}`],
-      ['Overrun Pay',`£${totalOT.toFixed(2)}`],
-      ['Sick/AL Pay',`£${(totalGross-totalBasic-totalNS-totalSun-totalOT).toFixed(2)}`],
-      ['Food Allowances',`£${totalFood.toFixed(2)}`],
-      ['Mileage Claims',`£${totalMile.toFixed(2)}`],
-      [],
-      ['ESTIMATED GROSS PAY',`£${totalGross.toFixed(2)}`],
-      [],
-      ['Note','This is an ESTIMATE based on NHS AfC rates. Always verify against your official payslip.']
-    ];
-    const ws2=XLSX.utils.aoa_to_sheet(summaryRows);
-    ws2['!cols']=[{wch:28},{wch:20}];
+    const band=BANDS[selBand];const rate=getRate();
+    const summaryRows=[['KineticShift — Pay Summary'],[],['Exported',new Date().toLocaleDateString('en-GB')],['Pay Band',`Band ${selBand}`],['Pay Point',selPoint],['Hourly Rate',`£${rate.toFixed(2)}`],['Night/Sat Enhancement',`+${Math.round(band.enhNS*100)}%`],['Sunday/BH Enhancement',`+${Math.round(band.enhSun*100)}%`],[],['TOTALS',''],['Basic Pay',`£${totalBasic.toFixed(2)}`],['Night/Sat Enhancements',`£${totalNS.toFixed(2)}`],['Sunday/BH Enhancements',`£${totalSun.toFixed(2)}`],['Overrun Pay',`£${totalOT.toFixed(2)}`],['Sick/AL Pay',`£${(totalGross-totalBasic-totalNS-totalSun-totalOT).toFixed(2)}`],['Food Allowances',`£${totalFood.toFixed(2)}`],['Mileage Claims',`£${totalMile.toFixed(2)}`],[],['ESTIMATED GROSS PAY',`£${totalGross.toFixed(2)}`],[],['Note','This is an ESTIMATE based on NHS AfC rates. Always verify against your official payslip.']];
+    const ws2=XLSX.utils.aoa_to_sheet(summaryRows);ws2['!cols']=[{wch:28},{wch:20}];
     XLSX.utils.book_append_sheet(wb,ws2,'Summary');
-
-    // Download
     const date=new Date().toISOString().slice(0,10);
     XLSX.writeFile(wb,`KineticShift-${date}.xlsx`);
-
-    const btn=document.getElementById('btn-export');
-    const orig=btn.innerHTML;btn.innerHTML='✅ Exported!';
-    setTimeout(()=>{btn.innerHTML=orig;},2000);
+    const btn=document.getElementById('btn-export');const orig=btn.innerHTML;btn.innerHTML='✅ Exported!';setTimeout(()=>{btn.innerHTML=orig;},2000);
   };
-  script.onerror=function(){
-    alert('Could not load Excel library — check your internet connection and try again.');
-  };
+  script.onerror=function(){alert('Could not load Excel library — check your internet connection and try again.');};
   document.head.appendChild(script);
 });
 
