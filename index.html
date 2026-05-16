@@ -273,9 +273,70 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
 .sick-btns { display:flex;flex-direction:column;gap:8px; }
 .sbtn { padding:12px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border2);color:var(--txt2);background:var(--surface2);text-align:left; }
 .sbtn.active { border-color:var(--sick-border);color:var(--sick-txt);background:var(--sick-bg); }
+
+/* ── MANAGE SHIFTS MODAL ── */
+#manage-shifts-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9998;align-items:flex-end;justify-content:center;}
+#manage-shifts-modal.show{display:flex;}
+.ms-sheet{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px calc(24px + env(safe-area-inset-bottom));width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+.ms-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.ms-title{font-size:17px;font-weight:700;color:var(--txt1);}
+.ms-x{width:30px;height:30px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--txt2);}
+.ms-sub{font-size:12px;color:var(--txt2);margin-bottom:14px;line-height:1.5;}
+.ms-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.ms-item{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;}
+.ms-dot{width:14px;height:14px;border-radius:4px;flex-shrink:0;}
+.ms-name{font-size:13px;font-weight:600;color:var(--txt1);flex:1;}
+.ms-time{font-size:11px;color:var(--txt3);font-family:'DM Mono',monospace;}
+.ms-del{width:28px;height:28px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);color:var(--red);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ms-divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+.ms-form-title{font-size:12px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;}
+.ms-form-row{margin-bottom:10px;}
+.ms-form-row label{display:block;font-size:11px;font-weight:600;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;}
+.ms-form-row input{width:100%;padding:10px 12px;font-size:14px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt1);font-family:'Inter',sans-serif;}
+.ms-form-row input[type=time]{font-family:'DM Mono',monospace;font-size:15px;}
+.ms-form-row input:focus{outline:2px solid var(--blue);border-color:transparent;}
+.ms-colour-row{display:flex;gap:8px;flex-wrap:wrap;padding:4px 0;}
+.ms-swatch{width:30px;height:30px;border-radius:7px;cursor:pointer;border:3px solid transparent;transition:transform 0.1s;}
+.ms-swatch.picked{border-color:var(--txt1);transform:scale(1.15);}
+.ms-add-btn{width:100%;padding:12px;background:var(--nhs);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;}
+.ms-add-btn:active{opacity:0.9;}
+.ms-no-custom{font-size:12px;color:var(--txt3);text-align:center;padding:8px;font-style:italic;}
 </style>
 </head>
 <body>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- MANAGE SHIFTS MODAL                         -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="manage-shifts-modal">
+  <div class="ms-sheet">
+    <div class="ms-hdr">
+      <div class="ms-title">Manage Shift Types</div>
+      <button class="ms-x" id="ms-close">✕</button>
+    </div>
+    <div class="ms-sub">Add your own shift types — name them, set the times, pick a colour. They appear as buttons when you tap any day.</div>
+    <div class="ms-list" id="ms-list"></div>
+    <hr class="ms-divider">
+    <div class="ms-form-title">Add a new shift type</div>
+    <div class="ms-form-row">
+      <label>Shift name</label>
+      <input type="text" id="ms-new-name" placeholder="e.g. Training, Standby, Relief, RRV..." maxlength="20">
+    </div>
+    <div class="ms-form-row">
+      <label>Start time</label>
+      <input type="time" id="ms-new-start" value="06:30">
+    </div>
+    <div class="ms-form-row">
+      <label>Finish time</label>
+      <input type="time" id="ms-new-finish" value="18:30">
+    </div>
+    <div class="ms-form-row">
+      <label>Colour</label>
+      <div class="ms-colour-row" id="ms-colour-row"></div>
+    </div>
+    <button class="ms-add-btn" id="ms-add-btn">+ Add Shift Type</button>
+  </div>
+</div>
 
 <!-- ═══════════════════════════════════════════ -->
 <!-- INSTALL BANNER                              -->
@@ -565,7 +626,14 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
 
 <div class="section">
   <div class="sec-title">Settings</div>
-  <div class="card">
+  <div class="card" style="margin-bottom:8px">
+    <div class="dp-row" style="margin-bottom:0">
+      <div class="settings-label">Custom shift types</div>
+      <div style="font-size:12px;color:var(--txt2);margin:6px 0 10px;line-height:1.5">Add your own shift names, times and colours. They appear as extra buttons when you tap any day.</div>
+      <button id="open-manage-shifts" style="width:100%;padding:11px;background:var(--nhs);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">⚙ Manage Shift Types</button>
+      <div id="custom-types-summary" style="margin-top:8px;font-size:11px;color:var(--txt3)">No custom types added yet.</div>
+    </div>
+  </div>
     <div class="dp-row">
       <div class="settings-label">Contract type</div>
       <div class="contract-btns">
@@ -1316,7 +1384,118 @@ document.getElementById('btn-export').addEventListener('click',()=>{
   document.head.appendChild(script);
 });
 
+// ═══════════════════════════════════════════════════
+// MANAGE CUSTOM SHIFT TYPES
+// ═══════════════════════════════════════════════════
+const MS_COLOURS=['#10B981','#3B82F6','#8B5CF6','#F59E0B','#EF4444','#EC4899','#F97316','#06B6D4','#84CC16','#14B8A6'];
+let customShiftTypes=[];
+let msPickedColour=MS_COLOURS[0];
+
+function openManageShifts(){
+  renderManageModal();
+  document.getElementById('manage-shifts-modal').classList.add('show');
+}
+function closeManageShifts(){
+  document.getElementById('manage-shifts-modal').classList.remove('show');
+}
+
+document.getElementById('open-manage-shifts').addEventListener('click',openManageShifts);
+document.getElementById('ms-close').addEventListener('click',closeManageShifts);
+document.getElementById('manage-shifts-modal').addEventListener('click',e=>{
+  if(e.target===document.getElementById('manage-shifts-modal'))closeManageShifts();
+});
+
+function renderManageModal(){
+  // Colour swatches
+  const cr=document.getElementById('ms-colour-row');
+  cr.innerHTML=MS_COLOURS.map(c=>`<div class="ms-swatch${c===msPickedColour?' picked':''}" style="background:${c}" onclick="msPickColour('${c}')"></div>`).join('');
+  // List
+  const list=document.getElementById('ms-list');
+  if(customShiftTypes.length===0){
+    list.innerHTML='<div class="ms-no-custom">No custom shift types yet — add one below</div>';
+    return;
+  }
+  list.innerHTML=customShiftTypes.map((t,i)=>`
+    <div class="ms-item">
+      <div class="ms-dot" style="background:${t.colour}"></div>
+      <div class="ms-name">${t.name}</div>
+      <div class="ms-time">${t.start&&t.finish?t.start+'–'+t.finish:'—'}</div>
+      <button class="ms-del" onclick="deleteCustomType(${i})">×</button>
+    </div>`).join('');
+}
+
+function msPickColour(c){msPickedColour=c;renderManageModal();}
+
+function deleteCustomType(i){
+  customShiftTypes.splice(i,1);
+  saveCustomTypes();
+  updateCustomTypesSummary();
+  renderManageModal();
+  render();
+}
+
+document.getElementById('ms-add-btn').addEventListener('click',()=>{
+  const name=document.getElementById('ms-new-name').value.trim();
+  if(!name){alert('Please enter a shift name.');return;}
+  const start=document.getElementById('ms-new-start').value;
+  const finish=document.getElementById('ms-new-finish').value;
+  customShiftTypes.push({id:'cst_'+Date.now(),name,start,finish,colour:msPickedColour});
+  document.getElementById('ms-new-name').value='';
+  saveCustomTypes();
+  updateCustomTypesSummary();
+  renderManageModal();
+  render();
+});
+
+function saveCustomTypes(){
+  try{localStorage.setItem('ks-custom-types',JSON.stringify(customShiftTypes));}catch(e){}
+}
+function loadCustomTypes(){
+  try{const s=localStorage.getItem('ks-custom-types');if(s)customShiftTypes=JSON.parse(s);}catch(e){}
+}
+
+function updateCustomTypesSummary(){
+  const el=document.getElementById('custom-types-summary');
+  if(customShiftTypes.length===0){el.textContent='No custom types added yet.';return;}
+  el.textContent=customShiftTypes.map(t=>t.name).join(' · ');
+}
+
+function buildCustomTypeBtns(){
+  // Remove any previously injected custom buttons
+  document.querySelectorAll('.tbtn-custom').forEach(b=>b.remove());
+  const container=document.querySelector('.type-btns');
+  const clearBtn=container.querySelector('[data-type="none"]');
+  customShiftTypes.forEach(t=>{
+    const btn=document.createElement('button');
+    btn.className='tbtn tbtn-custom';
+    btn.dataset.type=t.id;
+    btn.textContent=t.name;
+    btn.style.background=t.colour+'22';
+    btn.style.borderColor=t.colour+'88';
+    btn.style.color=t.colour;
+    btn.addEventListener('click',()=>{
+      if(!selKey)return;
+      const sh=getSh(selKey);
+      sh.type=t.id;
+      sh.start=sh.start||t.start;
+      sh.finish=sh.finish||t.finish;
+      if(!sh.start){sh.start=t.start;document.getElementById('dp-start').value=t.start;}
+      if(!sh.finish){sh.finish=t.finish;document.getElementById('dp-finish').value=t.finish;}
+      shifts[selKey]=sh;
+      // Auto-fill times if empty
+      if(!document.getElementById('dp-start').value&&t.start)document.getElementById('dp-start').value=t.start;
+      if(!document.getElementById('dp-finish').value&&t.finish)document.getElementById('dp-finish').value=t.finish;
+      document.getElementById('different-station-row').style.display='block';
+      persist();
+    });
+    container.insertBefore(btn,clearBtn);
+  });
+}
+
 load();
+loadCustomTypes();
+updateCustomTypesSummary();
+buildCustomTypeBtns();
 </script>
 </body>
 </html>
