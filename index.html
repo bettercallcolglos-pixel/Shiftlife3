@@ -588,7 +588,86 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
 </div>
 
 <div class="section">
-  <div class="card" style="padding:8px 14px">
+  <div class="sec-title">🔄 Rolling Relief Tracker</div>
+
+  <!-- Status card -->
+  <div id="rr-status-card" style="border-radius:var(--radius);padding:18px;margin-bottom:12px;border:2px solid var(--border2);background:var(--surface2)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:0.8px">Current Balance</div>
+      <div id="rr-status-badge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--border);color:var(--txt2)">Not set up</div>
+    </div>
+    <div id="rr-balance-display" style="font-size:42px;font-weight:700;font-family:'DM Mono',monospace;color:var(--txt1);line-height:1">—</div>
+    <div id="rr-balance-label" style="font-size:12px;color:var(--txt3);margin-top:4px">Enter your details below to start tracking</div>
+
+    <!-- Visual gauge -->
+    <div style="margin-top:14px">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt3);margin-bottom:4px">
+        <span>−22 hrs</span><span>Normal parameter</span><span>+22 hrs</span>
+      </div>
+      <div style="height:12px;border-radius:6px;background:var(--surface2);border:1px solid var(--border2);overflow:hidden;position:relative">
+        <!-- Coloured zones -->
+        <div style="position:absolute;inset:0;display:flex">
+          <div style="flex:1;background:#FEE2E2"></div>
+          <div style="flex:3;background:#D1FAE5"></div>
+          <div style="flex:1;background:#FEE2E2"></div>
+        </div>
+        <!-- Centre line -->
+        <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(0,0,0,0.15);transform:translateX(-50%)"></div>
+        <!-- Marker -->
+        <div id="rr-gauge-marker" style="position:absolute;top:0;bottom:0;width:4px;border-radius:2px;background:var(--txt3);transform:translateX(-50%);left:50%;transition:left 0.5s,background 0.5s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--txt3);margin-top:3px">
+        <span>⚠️ Over limit</span><span style="text-align:center">✅ Safe zone</span><span>⚠️ Over limit</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Breakdown -->
+  <div class="sbox" style="margin-bottom:12px" id="rr-breakdown">
+    <div class="srow"><span class="slbl">Opening balance (from letter)</span><span class="sval" id="rr-opening">—</span></div>
+    <div class="srow"><span class="slbl">Hours worked since start date</span><span class="sval" id="rr-worked">—</span></div>
+    <div class="srow"><span class="slbl">Hours contracted since start date</span><span class="sval" id="rr-contracted">—</span></div>
+    <div class="srow"><span class="slbl">Change since start date</span><span class="sval" id="rr-change">—</span></div>
+    <div class="srow"><span class="slbl" style="font-weight:600;color:var(--txt1)">Current balance</span><span class="sval big" id="rr-current">—</span></div>
+    <div class="srow"><span class="slbl">Normal parameter</span><span class="sval">±22.0 hrs</span></div>
+    <div class="srow"><span class="slbl">Headroom remaining</span><span class="sval" id="rr-headroom">—</span></div>
+  </div>
+
+  <!-- Info box -->
+  <div id="rr-advice" class="ibox green" style="margin-bottom:12px;display:none"></div>
+
+  <!-- Setup card -->
+  <div class="card">
+    <div class="dp-row">
+      <div class="settings-label">Rolling Relief Setup</div>
+      <div style="font-size:12px;color:var(--txt2);margin-bottom:12px;line-height:1.5">Enter the details from your SWASFT rolling relief letter. The app will calculate your running balance using your logged shifts.</div>
+    </div>
+    <div class="dp-row">
+      <div class="settings-label">Opening balance (hours) <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--txt3);font-size:11px">— from your SWASFT letter, e.g. −17.35</span></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <input type="number" id="rr-opening-input" step="0.01" placeholder="e.g. -17.35" style="flex:1;font-size:18px;font-family:'DM Mono',monospace;font-weight:600;padding:10px 12px;border:2px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt1)">
+        <span style="font-size:13px;color:var(--txt3)">hrs</span>
+      </div>
+    </div>
+    <div class="dp-row">
+      <div class="settings-label">Balance start date <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--txt3);font-size:11px">— default 1 April 2025 (SWASFT clean slate)</span></div>
+      <input type="date" id="rr-start-date" class="txt-input" style="margin-top:6px" value="2025-04-01">
+    </div>
+    <div class="dp-row" style="margin-bottom:0">
+      <div class="settings-label">Contracted weekly hours</div>
+      <div class="contract-btns" style="margin-bottom:8px">
+        <button class="cbtn" data-hours="37.5" id="rr-ft">Full time<br><span style="font-weight:400;font-size:10px">37.5 hrs/wk</span></button>
+        <button class="cbtn" data-hours="30" id="rr-pt1">Part time<br><span style="font-weight:400;font-size:10px">30 hrs/wk</span></button>
+        <button class="cbtn" data-hours="22.5" id="rr-pt2">Part time<br><span style="font-weight:400;font-size:10px">22.5 hrs/wk</span></button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" id="rr-weekly-hours" step="0.5" min="1" max="37.5" placeholder="e.g. 37.5" style="flex:1;font-size:18px;font-family:'DM Mono',monospace;font-weight:600;padding:10px 12px;border:2px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt1)">
+        <span style="font-size:13px;color:var(--txt3)">hrs/week</span>
+      </div>
+      <div style="font-size:11px;color:var(--txt3);margin-top:6px">Sick days and annual leave are credited as contracted daily hours (hours ÷ 5 working days).</div>
+    </div>
+  </div>
+</div>
     <div class="policy-item"><div class="policy-dot"></div><div class="policy-text"><strong>Breaks (SWAST):</strong> Under 6hrs = no break · 6hrs to 11h59m = 30 min unpaid · 12hrs = 1 hour unpaid. If break not taken, go home early — pay stays the same.</div></div>
     <div class="policy-item"><div class="policy-dot"></div><div class="policy-text"><strong>Sick pay:</strong> Basic rate only (7.5hrs × hourly rate), no unsocial. If sent home more than halfway through shift — NOT a sick day, full pay applies including unsocial.</div></div>
     <div class="policy-item"><div class="policy-dot"></div><div class="policy-text"><strong>Mileage:</strong> Different station = claim shorter of home→new or base→new at 45p/mile.</div></div>
@@ -1238,7 +1317,7 @@ function render(){
   if(!found)nextEl.innerHTML=`<span style="color:var(--txt3)">No upcoming shifts logged</span>`;
 }
 
-function saveData(){try{localStorage.setItem('ks-shifts',JSON.stringify(shifts));}catch(e){}}
+function saveData(){try{localStorage.setItem('ks-shifts',JSON.stringify(shifts));}catch(e){}calcRollingRelief();}
 function saveSettings(){
   try{localStorage.setItem('ks-settings',JSON.stringify({
     band:selBand,point:selPoint,rate:document.getElementById('rate-input').value,
@@ -1492,10 +1571,185 @@ function buildCustomTypeBtns(){
   });
 }
 
+// ═══════════════════════════════════════════════════
+// ROLLING RELIEF TRACKER
+// ═══════════════════════════════════════════════════
+let rrSettings = { openingBalance: null, startDate: '2025-04-01', weeklyHours: null };
+
+function saveRR() {
+  try { localStorage.setItem('ks-rr', JSON.stringify(rrSettings)); } catch(e) {}
+}
+function loadRR() {
+  try {
+    const s = localStorage.getItem('ks-rr');
+    if (s) rrSettings = Object.assign({}, rrSettings, JSON.parse(s));
+  } catch(e) {}
+  // Populate fields
+  if (rrSettings.openingBalance !== null) document.getElementById('rr-opening-input').value = rrSettings.openingBalance;
+  if (rrSettings.startDate) document.getElementById('rr-start-date').value = rrSettings.startDate;
+  if (rrSettings.weeklyHours !== null) document.getElementById('rr-weekly-hours').value = rrSettings.weeklyHours;
+  // Highlight contract button
+  document.querySelectorAll('[data-hours]').forEach(b => {
+    b.classList.toggle('active', parseFloat(b.dataset.hours) === rrSettings.weeklyHours);
+  });
+}
+
+// Hours buttons
+document.querySelectorAll('[data-hours]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const h = parseFloat(btn.dataset.hours);
+    rrSettings.weeklyHours = h;
+    document.getElementById('rr-weekly-hours').value = h;
+    document.querySelectorAll('[data-hours]').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.hours) === h));
+    saveRR(); calcRollingRelief();
+  });
+});
+
+document.getElementById('rr-opening-input').addEventListener('input', () => {
+  const v = parseFloat(document.getElementById('rr-opening-input').value);
+  rrSettings.openingBalance = isNaN(v) ? null : v;
+  saveRR(); calcRollingRelief();
+});
+document.getElementById('rr-start-date').addEventListener('change', () => {
+  rrSettings.startDate = document.getElementById('rr-start-date').value;
+  saveRR(); calcRollingRelief();
+});
+document.getElementById('rr-weekly-hours').addEventListener('input', () => {
+  const v = parseFloat(document.getElementById('rr-weekly-hours').value);
+  rrSettings.weeklyHours = isNaN(v) ? null : v;
+  document.querySelectorAll('[data-hours]').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.hours) === v));
+  saveRR(); calcRollingRelief();
+});
+
+function calcRollingRelief() {
+  const { openingBalance, startDate, weeklyHours } = rrSettings;
+  const balEl = document.getElementById('rr-balance-display');
+  const lblEl = document.getElementById('rr-balance-label');
+  const badgeEl = document.getElementById('rr-status-badge');
+  const cardEl = document.getElementById('rr-status-card');
+  const adviceEl = document.getElementById('rr-advice');
+
+  if (openingBalance === null || !startDate || !weeklyHours) {
+    balEl.textContent = '—';
+    lblEl.textContent = 'Enter your details below to start tracking';
+    badgeEl.textContent = 'Not set up';
+    badgeEl.style.background = 'var(--border)';
+    badgeEl.style.color = 'var(--txt2)';
+    cardEl.style.borderColor = 'var(--border2)';
+    cardEl.style.background = 'var(--surface2)';
+    adviceEl.style.display = 'none';
+    ['rr-opening','rr-worked','rr-contracted','rr-change','rr-current','rr-headroom'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+    });
+    document.getElementById('rr-gauge-marker').style.left = '50%';
+    return;
+  }
+
+  const startD = new Date(startDate);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const dailyContracted = weeklyHours / 5; // contracted hours per working day
+  const dailyContractedAll = weeklyHours / 7; // spread over 7 days for calendar calc
+
+  let totalWorked = 0;
+  let totalContracted = 0;
+
+  // Loop through every day from startDate to today
+  const d = new Date(startD);
+  while (d <= today) {
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const sh = getSh(key);
+
+    if (sh.type === 'off' || sh.type === 'none') {
+      // Rest day — no contracted hours expected, no hours worked
+    } else if (sh.type === 'sick' || sh.type === 'annual-leave') {
+      // Credited as contracted daily hours
+      totalWorked += dailyContracted;
+      totalContracted += dailyContracted;
+    } else if (sh.type !== 'none' && sh.start && sh.finish) {
+      // Actual shift worked
+      const p = calcPay(key, sh);
+      totalWorked += p.worked;
+      totalContracted += dailyContracted;
+    }
+    d.setDate(d.getDate() + 1);
+  }
+
+  const change = totalWorked - totalContracted;
+  const currentBalance = Math.round((openingBalance + change) * 100) / 100;
+  const LIMIT = 22;
+  const headroom = Math.round((LIMIT - Math.abs(currentBalance)) * 100) / 100;
+  const isOver = Math.abs(currentBalance) > LIMIT;
+  const isWarning = Math.abs(currentBalance) > LIMIT * 0.75;
+
+  // Colours
+  let colour, bgColour, borderColour, badgeBg, badgeTxt, statusText;
+  if (isOver) {
+    colour = '#991B1B'; bgColour = '#FEE2E2'; borderColour = '#F87171';
+    badgeBg = '#FEE2E2'; badgeTxt = '#991B1B';
+    statusText = '⚠️ Outside normal parameter';
+  } else if (isWarning) {
+    colour = '#92400E'; bgColour = '#FEF3C7'; borderColour = '#F59E0B';
+    badgeBg = '#FEF3C7'; badgeTxt = '#92400E';
+    statusText = '🟡 Approaching limit';
+  } else {
+    colour = '#065F46'; bgColour = '#ECFDF5'; borderColour = '#34D399';
+    badgeBg = '#ECFDF5'; badgeTxt = '#065F46';
+    statusText = '✅ Within normal parameter';
+  }
+
+  // Update display
+  const sign = currentBalance >= 0 ? '+' : '';
+  balEl.textContent = `${sign}${currentBalance.toFixed(2)} hrs`;
+  balEl.style.color = colour;
+  lblEl.textContent = currentBalance >= 0 ? 'You are ahead on hours' : 'You are behind on hours';
+  badgeEl.textContent = statusText;
+  badgeEl.style.background = badgeBg; badgeEl.style.color = badgeTxt;
+  cardEl.style.borderColor = borderColour; cardEl.style.background = bgColour;
+
+  // Gauge marker — map -22 to +22 onto 10% to 90%
+  const pct = Math.max(5, Math.min(95, 50 + (currentBalance / LIMIT) * 40));
+  const marker = document.getElementById('rr-gauge-marker');
+  marker.style.left = pct + '%';
+  marker.style.background = colour;
+
+  // Breakdown
+  document.getElementById('rr-opening').textContent = `${openingBalance >= 0 ? '+' : ''}${openingBalance.toFixed(2)} hrs`;
+  document.getElementById('rr-worked').textContent = `${totalWorked.toFixed(2)} hrs`;
+  document.getElementById('rr-contracted').textContent = `${totalContracted.toFixed(2)} hrs`;
+  const chSign = change >= 0 ? '+' : '';
+  document.getElementById('rr-change').textContent = `${chSign}${change.toFixed(2)} hrs`;
+  document.getElementById('rr-change').style.color = change >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('rr-current').textContent = `${sign}${currentBalance.toFixed(2)} hrs`;
+  document.getElementById('rr-current').style.color = colour;
+
+  if (isOver) {
+    document.getElementById('rr-headroom').textContent = `${Math.abs(headroom).toFixed(2)} hrs OVER limit`;
+    document.getElementById('rr-headroom').style.color = 'var(--red)';
+  } else {
+    document.getElementById('rr-headroom').textContent = `${headroom.toFixed(2)} hrs to limit`;
+    document.getElementById('rr-headroom').style.color = 'var(--green)';
+  }
+
+  // Advice
+  adviceEl.style.display = 'block';
+  adviceEl.className = `ibox ${isOver ? 'red' : isWarning ? 'amber' : 'green'}`;
+  if (isOver) {
+    const hoursOver = Math.abs(currentBalance) - LIMIT;
+    adviceEl.innerHTML = `<strong>Outside normal parameter.</strong> You are ${Math.abs(currentBalance).toFixed(2)} hrs ${currentBalance < 0 ? 'under' : 'over'} contracted hours — ${hoursOver.toFixed(2)} hrs beyond the ±22 hr limit. Contact your line manager or ROC to agree a recovery plan.`;
+  } else if (isWarning) {
+    adviceEl.innerHTML = `<strong>Approaching the limit.</strong> You have ${headroom.toFixed(2)} hrs of headroom remaining before you exceed the ±22 hr normal parameter. Keep an eye on this.`;
+  } else {
+    adviceEl.innerHTML = `<strong>All good.</strong> You are within the ±22 hr normal parameter with ${headroom.toFixed(2)} hrs of headroom. No action needed.`;
+  }
+}
+
 load();
 loadCustomTypes();
 updateCustomTypesSummary();
 buildCustomTypeBtns();
+loadRR();
+calcRollingRelief();
 </script>
 </body>
 </html>
