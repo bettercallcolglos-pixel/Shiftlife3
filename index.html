@@ -636,6 +636,20 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
   <!-- Info box -->
   <div id="rr-advice" class="ibox green" style="margin-bottom:12px;display:none"></div>
 
+  <!-- 12-month projection -->
+  <div id="rr-projection-card" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow)">
+    <div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px">📈 12-Month Projection</div>
+    <div style="font-size:12px;color:var(--txt2);margin-bottom:12px;line-height:1.5">Based on your logged shift pattern — how many hours per week you're averaging.</div>
+    <div class="sbox">
+      <div class="srow"><span class="slbl">Avg hours worked per week</span><span class="sval" id="proj-weekly-avg">—</span></div>
+      <div class="srow"><span class="slbl">Contracted per week</span><span class="sval" id="proj-weekly-contracted">—</span></div>
+      <div class="srow"><span class="slbl">Weekly drift</span><span class="sval" id="proj-weekly-drift">—</span></div>
+      <div class="srow"><span class="slbl">Projected annual drift</span><span class="sval" id="proj-annual-drift">—</span></div>
+      <div class="srow" style="background:var(--surface2)"><span class="slbl" style="font-weight:600;color:var(--txt1)">Projected balance in 12 months</span><span class="sval big" id="proj-12m">—</span></div>
+    </div>
+    <div id="proj-advice" style="margin-top:10px;padding:10px 14px;border-radius:var(--radius-sm);font-size:12px;line-height:1.6;border:1px solid"></div>
+  </div>
+
   <!-- Setup card -->
   <div class="card">
     <div class="dp-row">
@@ -1803,6 +1817,50 @@ function calcRollingRelief() {
     adviceEl.innerHTML = `<strong>Approaching the limit.</strong> You have ${headroom.toFixed(2)} hrs of headroom remaining before you exceed the ±22 hr normal parameter. Keep an eye on this.`;
   } else {
     adviceEl.innerHTML = `<strong>All good.</strong> You are within the ±22 hr normal parameter with ${headroom.toFixed(2)} hrs of headroom. No action needed.`;
+  }
+
+  // ── 12-MONTH PROJECTION ──
+  // Only show if we have at least 2 weeks of data to average from
+  const projCard = document.getElementById('rr-projection-card');
+  const weeksTracked = totalContracted / weeklyHours;
+
+  if (weeksTracked >= 2) {
+    projCard.style.display = 'block';
+
+    const avgWorkedPerWeek = totalWorked / weeksTracked;
+    const weeklyDrift = avgWorkedPerWeek - weeklyHours;
+    const annualDrift = weeklyDrift * 52;
+    const projected12m = Math.round((currentBalance + annualDrift) * 100) / 100;
+    const proj12mSign = projected12m >= 0 ? '+' : '';
+    const driftSign = weeklyDrift >= 0 ? '+' : '';
+
+    document.getElementById('proj-weekly-avg').textContent = `${avgWorkedPerWeek.toFixed(2)} hrs`;
+    document.getElementById('proj-weekly-contracted').textContent = `${weeklyHours.toFixed(1)} hrs`;
+    document.getElementById('proj-weekly-drift').textContent = `${driftSign}${weeklyDrift.toFixed(2)} hrs/wk`;
+    document.getElementById('proj-weekly-drift').style.color = weeklyDrift > 0 ? 'var(--green)' : weeklyDrift < 0 ? 'var(--red)' : 'var(--txt1)';
+    document.getElementById('proj-annual-drift').textContent = `${driftSign}${annualDrift.toFixed(1)} hrs/year`;
+    document.getElementById('proj-annual-drift').style.color = weeklyDrift > 0 ? 'var(--green)' : weeklyDrift < 0 ? 'var(--red)' : 'var(--txt1)';
+    document.getElementById('proj-12m').textContent = `${proj12mSign}${projected12m.toFixed(2)} hrs`;
+
+    const projIsOver = Math.abs(projected12m) > LIMIT;
+    const projIsWarn = Math.abs(projected12m) > LIMIT * 0.75;
+    document.getElementById('proj-12m').style.color = projIsOver ? 'var(--red)' : projIsWarn ? 'var(--amber)' : 'var(--green)';
+
+    const pa = document.getElementById('proj-advice');
+    if (projIsOver) {
+      const direction = projected12m > 0 ? 'over' : 'under';
+      const excess = (Math.abs(projected12m) - LIMIT).toFixed(1);
+      pa.style.background = '#FEF2F2'; pa.style.color = '#991B1B'; pa.style.borderColor = '#FCA5A5';
+      pa.innerHTML = `<strong>⚠️ Action recommended.</strong> At your current rate you will be ${Math.abs(projected12m).toFixed(1)} hrs ${direction} contracted hours in 12 months — ${excess} hrs beyond the ±22 hr limit. Speak to your line manager or ROC now to get ahead of this.`;
+    } else if (projIsWarn) {
+      pa.style.background = '#FFFBEB'; pa.style.color = '#92400E'; pa.style.borderColor = '#FCD34D';
+      pa.innerHTML = `<strong>🟡 Worth monitoring.</strong> At your current rate you'll be ${Math.abs(projected12m).toFixed(1)} hrs ${projected12m >= 0 ? 'over' : 'under'} in 12 months — close to the limit but within normal parameter.`;
+    } else {
+      pa.style.background = '#ECFDF5'; pa.style.color = '#065F46'; pa.style.borderColor = '#6EE7B7';
+      pa.innerHTML = `<strong>✅ Looking good.</strong> At your current rate you'll be ${proj12mSign}${projected12m.toFixed(1)} hrs in 12 months — well within the ±22 hr normal parameter.`;
+    }
+  } else {
+    projCard.style.display = 'none';
   }
 }
 
