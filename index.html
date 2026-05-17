@@ -27,6 +27,7 @@
   --rrv-bg: #FFF0F3; --rrv-txt: #9D174D; --rrv-border: #F472B6;
   --surge-bg: #FFF7ED; --surge-txt: #9A3412; --surge-border: #FB923C;
   --mgr-bg: #F5F3FF; --mgr-txt: #5B21B6; --mgr-border: #A78BFA;
+  --ot-bg: #FFF1F2; --ot-txt: #9F1239; --ot-border: #FB7185;
   --red: #EF4444; --amber: #F59E0B; --green: #10B981; --blue: #3B82F6; --purple: #8B5CF6;
   --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
   --radius: 12px; --radius-sm: 8px;
@@ -45,6 +46,7 @@
     --rrv-bg: #3b0a1f; --rrv-txt: #F9A8D4; --rrv-border: #9D174D;
     --surge-bg: #3c1a09; --surge-txt: #FDBA74; --surge-border: #9A3412;
     --mgr-bg: #2e1a5e; --mgr-txt: #C4B5FD; --mgr-border: #5B21B6;
+    --ot-bg: #4c0519; --ot-txt: #FDA4AF; --ot-border: #9F1239;
     --shadow: 0 1px 3px rgba(0,0,0,0.3);
   }
 }
@@ -140,6 +142,7 @@ body { padding-bottom: calc(70px + var(--safe-bottom)); }
 .cell.rrv { background: var(--rrv-bg); border-color: var(--rrv-border); }
 .cell.surge { background: var(--surge-bg); border-color: var(--surge-border); }
 .cell.manager { background: var(--mgr-bg); border-color: var(--mgr-border); }
+.cell.overtime { background: var(--ot-bg); border-color: var(--ot-border); }
 .cn { font-size: 11px; font-weight: 600; color: var(--txt2); line-height: 1; }
 .cell.days .cn,.cell.days .cl,.cell.days .ct,.cell.days .cs { color: var(--days-txt); }
 .cell.nights .cn,.cell.nights .cl,.cell.nights .ct,.cell.nights .cs { color: var(--nights-txt); }
@@ -149,6 +152,7 @@ body { padding-bottom: calc(70px + var(--safe-bottom)); }
 .cell.rrv .cn,.cell.rrv .cl,.cell.rrv .ct,.cell.rrv .cs { color: var(--rrv-txt); }
 .cell.surge .cn,.cell.surge .cl,.cell.surge .ct,.cell.surge .cs { color: var(--surge-txt); }
 .cell.manager .cn,.cell.manager .cl,.cell.manager .ct,.cell.manager .cs { color: var(--mgr-txt); }
+.cell.overtime .cn,.cell.overtime .cl,.cell.overtime .ct,.cell.overtime .cs { color: var(--ot-txt); }
 .cl { font-size: 12px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; margin-top: 1px; }
 .ct { font-size: 9px; margin-top: 2px; line-height: 1.3; text-align: center; font-weight: 600; font-family: 'DM Mono', monospace; }
 .cs { font-size: 8px; margin-top: 2px; text-align: center; font-weight: 600; overflow: hidden; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
@@ -180,6 +184,7 @@ body { padding-bottom: calc(70px + var(--safe-bottom)); }
 .tbtn.arrv { background: var(--rrv-bg); color: var(--rrv-txt); border-color: var(--rrv-border); }
 .tbtn.asurge { background: var(--surge-bg); color: var(--surge-txt); border-color: var(--surge-border); }
 .tbtn.amgr { background: var(--mgr-bg); color: var(--mgr-txt); border-color: var(--mgr-border); }
+.tbtn.aot { background: var(--ot-bg); color: var(--ot-txt); border-color: var(--ot-border); }
 @media (prefers-color-scheme: dark) {
   .tbtn.as { background: #450a0a; color: #FCA5A5; border-color: #7f1d1d; }
   .tbtn.aal { background: #0c2d3f; color: #7DD3FC; border-color: #0369A1; }
@@ -405,6 +410,7 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
   <div class="leg"><div class="leg-dot" style="background:#34D399"></div>Off</div>
   <div class="leg"><div class="leg-dot" style="background:#F87171"></div>Sick</div>
   <div class="leg"><div class="leg-dot" style="background:#38BDF8"></div>A/L</div>
+  <div class="leg"><div class="leg-dot" style="background:#FB7185"></div>OT Shift</div>
   <div class="leg"><div class="leg-dot" style="background:#EF4444;border-radius:50%"></div>OT</div>
   <div class="leg"><div class="leg-dot" style="background:#3B82F6;border-radius:50%"></div>Note</div>
   <div class="leg-hint">Tap any day</div>
@@ -439,6 +445,7 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
       <div class="type-btns">
         <button class="tbtn" data-type="days">☀ Days</button>
         <button class="tbtn" data-type="nights">🌙 Nights</button>
+        <button class="tbtn" data-type="overtime">⏰ Overtime</button>
         <button class="tbtn" data-type="rrv">🚗 RRV</button>
         <button class="tbtn" data-type="surge">⚡ Surge</button>
         <button class="tbtn" data-type="manager">👔 Manager</button>
@@ -924,6 +931,29 @@ function calcPay(dKey,sh){
 
 function calcSickPay(){const rate=getRate();return{dailyPay:rate*7.5,rate};}
 
+// OVERTIME PAY — ×1.5 for all hours, or unsocial rate if higher (no double-dip)
+function calcOvertimePay(dKey,sh){
+  const g=calcH(sh.start,sh.finish)||0;
+  const brkMins=swastBreakMins(g);
+  const worked=Math.max(0,g-brkMins/60);
+  const rate=getRate();
+  const enhNS=BANDS[selBand].enhNS||0.30;
+  const enhSun=BANDS[selBand].enhSun||0.60;
+  const OT=1.5; // overtime multiplier
+  const periods=calcUnsocPeriods(dKey,sh.start,sh.finish);
+  const nsH=Math.min(periods.nightSatMins/60,worked);
+  const sunH=Math.min(periods.sunMins/60,worked-nsH);
+  const socH=Math.max(0,worked-nsH-sunH);
+  // Use whichever rate is higher — OT or unsocial enhancement
+  const socRate=OT;                          // social hours: always ×1.5
+  const nsRate=Math.max(OT,1+enhNS);        // night/sat: ×1.5 vs ×1.30 → 1.5 wins for all bands
+  const sunRate=Math.max(OT,1+enhSun);      // sunday: ×1.5 vs ×1.60 (Band 4+) → varies
+  const socP=socH*rate*socRate;
+  const nsP=nsH*rate*nsRate;
+  const sunP=sunH*rate*sunRate;
+  const total=socP+nsP+sunP;
+  return{g,brkMins,worked,socH,nsH,sunH,socP,nsP,sunP,total,rate,socRate,nsRate,sunRate};
+}
 function getSickPayEntitlement(startDateStr){
   if(!startDateStr)return null;
   const yrs=(new Date()-new Date(startDateStr))/(1000*60*60*24*365.25);
@@ -969,6 +999,23 @@ function updateSummary(){
     if(!g){
       document.getElementById('shift-summary').innerHTML='<div class="ibox blue">Set start and finish times to see your pay estimate.</div>';
       document.getElementById('shift-calc-info').innerHTML='';return;
+    }
+    // OVERTIME — separate calculation at ×1.5
+    if(sh.type==='overtime'){
+      const op=calcOvertimePay(selKey,sh);
+      const tl=shiftTL(sh.start,sh.finish);
+      document.getElementById('shift-calc-info').innerHTML=`<div class="ibox" style="background:#FFF1F2;color:#9F1239;border:1px solid #FB7185"><strong>⏰ Overtime shift — ×1.5 rate applied.</strong> ${op.brkMins > 0 ? op.brkMins+' min break deducted. ':''}<strong>Paid hours: ${Math.round(op.worked*100)/100} hrs.</strong> Bands 1–7 only. No TOIL at SWASFT.</div>`;
+      document.getElementById('shift-summary').innerHTML=`
+        <div class="sbox">
+          <div class="srow"><span class="slbl">Gross shift</span><span class="sval">${fH(op.g)}</span></div>
+          <div class="srow"><span class="slbl">Break deducted</span><span class="sval red">−${op.brkMins} min</span></div>
+          <div class="srow"><span class="slbl">Paid hours</span><span class="sval">${fH(op.worked)}</span></div>
+          ${op.socH>0?`<div class="srow"><span class="slbl">Social hours × ${op.socRate.toFixed(1)} (OT rate)</span><span class="sval" style="color:#9F1239">${fH(op.socH)} = ${fp(op.socP)}</span></div>`:''}
+          ${op.nsH>0?`<div class="srow"><span class="slbl">Night/Sat hours × ${op.nsRate.toFixed(2)} (higher rate)</span><span class="sval blu">${fH(op.nsH)} = ${fp(op.nsP)}</span></div>`:''}
+          ${op.sunH>0?`<div class="srow"><span class="slbl">Sunday hours × ${op.sunRate.toFixed(2)} (higher rate)</span><span class="sval blu">${fH(op.sunH)} = ${fp(op.sunP)}</span></div>`:''}
+          <div class="srow"><span class="slbl" style="font-weight:600;color:var(--txt1)">Estimated gross pay</span><span class="sval big grn">${fp(op.total)}</span></div>
+        </div>`;
+      return;
     }
     const p=calcPay(selKey,sh);
     const tl=shiftTL(sh.start,sh.finish);
@@ -1067,7 +1114,7 @@ function openDetail(key,y,m,d){
   document.getElementById('dp-title').textContent=`${DAYS_FULL[di]} ${d} ${MONTHS[m]}`;
   document.querySelectorAll('.tbtn').forEach(b=>{
     b.className='tbtn';
-    if(b.dataset.type===sh.type){const cls={days:'ad',nights:'an',off:'ao',sick:'as','annual-leave':'aal'}[sh.type]||'';if(cls)b.classList.add(cls);}
+    if(b.dataset.type===sh.type){const cls={days:'ad',nights:'an',off:'ao',sick:'as','annual-leave':'aal',overtime:'aot'}[sh.type]||'';if(cls)b.classList.add(cls);}
   });
   document.getElementById('dp-start').value=sh.start||'';
   document.getElementById('dp-finish').value=sh.finish||'';
@@ -1127,9 +1174,10 @@ document.querySelectorAll('.tbtn').forEach(btn=>{
     const t=btn.dataset.type;const sh=getSh(selKey);sh.type=t;
     if(t==='days'&&!sh.start){sh.start='06:30';sh.finish='18:30';document.getElementById('dp-start').value='06:30';document.getElementById('dp-finish').value='18:30';}
     if(t==='nights'&&!sh.start){sh.start='18:30';sh.finish='06:30';document.getElementById('dp-start').value='18:30';document.getElementById('dp-finish').value='06:30';}
+    if(t==='overtime'&&!sh.start){sh.start='06:30';sh.finish='18:30';document.getElementById('dp-start').value='06:30';document.getElementById('dp-finish').value='18:30';}
     if(t==='none')delete shifts[selKey];else shifts[selKey]=sh;
-    document.querySelectorAll('.tbtn').forEach(b=>{b.className='tbtn';if(b.dataset.type===t){const cls={days:'ad',nights:'an',off:'ao',sick:'as','annual-leave':'aal'}[t]||'';if(cls)b.classList.add(cls);}});
-    document.getElementById('different-station-row').style.display=(t==='days'||t==='nights')?'block':'none';
+    document.querySelectorAll('.tbtn').forEach(b=>{b.className='tbtn';if(b.dataset.type===t){const cls={days:'ad',nights:'an',off:'ao',sick:'as','annual-leave':'aal',overtime:'aot'}[t]||'';if(cls)b.classList.add(cls);}});
+    document.getElementById('different-station-row').style.display=(t==='days'||t==='nights'||t==='overtime')?'block':'none';
     persist();
   });
 });
@@ -1242,7 +1290,7 @@ function render(){
     cell.className=cls;
     const hasT=sh.start&&sh.finish&&t!=='off'&&t!=='sick'&&t!=='annual-leave';
     const inds=[(sh.overrunMins>0||sh.lateFinish)?'<div class="ind" style="background:#EF4444"></div>':'',sh.notes?'<div class="ind" style="background:#3B82F6"></div>':'',sh.foodAllowance?'<div class="ind" style="background:#10B981"></div>':'',sh.swapped?'<div class="ind" style="background:#F59E0B"></div>':''].filter(Boolean).join('');
-    const lbl=t==='days'?'Days':t==='nights'?'Nights':t==='off'?'Off':t==='sick'?'Sick':t==='annual-leave'?'A/L':'';
+    const lbl=t==='days'?'Days':t==='nights'?'Nights':t==='off'?'Off':t==='sick'?'Sick':t==='annual-leave'?'A/L':t==='overtime'?'O/T':'';
     cell.innerHTML=`<span class="cn">${d}</span>`+(t!=='none'?`<span class="cl">${lbl}</span>`:'')+
       (hasT?`<span class="ct">${sh.start}–${sh.finish}</span>`:'')+
       (sh.station&&t!=='none'&&t!=='off'&&t!=='sick'&&t!=='annual-leave'?`<span class="cs">${sh.station.slice(0,10)}</span>`:'')+
@@ -1251,11 +1299,15 @@ function render(){
     cal.appendChild(cell);
   }
 
-  let dc=0,nc=0,sc=0,alc=0,socH=0,nsH=0,sunHtot=0,otMins=0,pay=0,basicPtot=0,nsPtot=0,sunPtot=0,oP=0,food=0,sickPay=0,alPay=0;
+  let dc=0,nc=0,otc=0,sc=0,alc=0,socH=0,nsH=0,sunHtot=0,otMins=0,pay=0,basicPtot=0,nsPtot=0,sunPtot=0,oP=0,food=0,sickPay=0,alPay=0,overtimePay=0;
   for(let d=1;d<=di;d++){
     const key=dk(vY,vM,d),sh=getSh(key);
     if(sh.type==='days')dc++;
     else if(sh.type==='nights')nc++;
+    else if(sh.type==='overtime'){
+      otc++;
+      if(sh.start&&sh.finish){const op=calcOvertimePay(key,sh);overtimePay+=op.total;socH+=op.socH;nsH+=op.nsH;sunHtot+=op.sunH;}
+    }
     else if(sh.type==='sick'){
       if(sh.sickScenario==='late'){
         const leftTime=sh.sickLeftTime||sh.finish;
@@ -1270,7 +1322,7 @@ function render(){
     }
     if(sh.foodAllowance)food++;
   }
-  const totalPay=pay+sickPay+alPay;
+  const totalPay=pay+sickPay+alPay+overtimePay;
   const r=v=>Math.round(v*10)/10;
   document.getElementById('s-days').textContent=dc;
   document.getElementById('s-nights').textContent=nc;
@@ -1283,6 +1335,7 @@ function render(){
   document.getElementById('s-pay').textContent=`£${totalPay.toFixed(2)}`;
   document.getElementById('s-pay-brk').textContent=
     `£${basicPtot.toFixed(2)} basic · £${nsPtot.toFixed(2)} night/sat · £${sunPtot.toFixed(2)} sunday · £${oP.toFixed(2)} OT`+
+    (overtimePay>0?` · £${overtimePay.toFixed(2)} overtime (×1.5)`:'')+
     (sickPay>0?` · £${sickPay.toFixed(2)} sick`:'')+(alPay>0?` · £${alPay.toFixed(2)} A/L`:'');
   document.getElementById('stats-title').textContent=`${MONTHS[vM]} stats`;
 
@@ -1434,7 +1487,7 @@ document.getElementById('btn-export').addEventListener('click',()=>{
       const dateStr=`${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
       const typeLabel={days:'Days',nights:'Nights',rrv:'RRV',surge:'Surge',manager:'Manager',off:'Off',sick:'Sick','annual-leave':'Annual Leave'}[sh.type]||sh.type||'';
       let basicP=0,nsP=0,sunP=0,otP=0,gross=0,paidH=0;
-      if(sh.type==='days'||sh.type==='nights'||sh.type==='rrv'||sh.type==='surge'||sh.type==='manager'){
+      if(sh.type==='days'||sh.type==='nights'||sh.type==='rrv'||sh.type==='surge'||sh.type==='manager'||sh.type==='overtime'){
         const p=calcPay(k,sh);paidH=Math.round(p.worked*100)/100;basicP=Math.round(p.basicP*100)/100;
         nsP=Math.round(p.nsP*100)/100;sunP=Math.round(p.sunP*100)/100;otP=Math.round(p.oP*100)/100;
         gross=Math.round(p.total*100)/100;totalBasic+=basicP;totalNS+=nsP;totalSun+=sunP;totalOT+=otP;totalGross+=gross;
