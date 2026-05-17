@@ -435,6 +435,7 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
     <button class="tab-btn active" data-tab="shift">Shift</button>
     <button class="tab-btn" data-tab="sick-detail">Sick</button>
     <button class="tab-btn" data-tab="eos">End of Shift</button>
+    <button class="tab-btn" data-tab="overtime-tab">Overtime</button>
     <button class="tab-btn" data-tab="mileage">Mileage</button>
     <button class="tab-btn" data-tab="notes">Notes</button>
   </div>
@@ -530,6 +531,41 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
 
   <div class="tab-pane" id="tab-eos">
     <div id="eos-content"></div>
+  </div>
+
+  <div class="tab-pane" id="tab-overtime-tab">
+    <div class="ibox" style="background:#FFF1F2;color:#9F1239;border:1px solid #FB7185;margin-bottom:14px">
+      <strong>⏰ Overtime — SWASFT Policy</strong><br>
+      <span style="font-size:11px">Bands 1–7 only · Pre-approval required via scheduling · No TOIL at SWASFT</span>
+    </div>
+
+    <!-- Live overtime calculator -->
+    <div id="ot-tab-calc" style="display:none">
+      <div class="dp-label">This shift's overtime estimate</div>
+      <div id="ot-tab-result" style="margin-bottom:14px"></div>
+    </div>
+
+    <!-- Policy rules -->
+    <div class="dp-label">Key rules</div>
+    <div class="sbox" style="margin-bottom:12px">
+      <div class="srow"><span class="slbl">💷 Rate</span><span class="sval" style="font-size:12px;font-family:'Inter',sans-serif">×1.5 basic hourly rate</span></div>
+      <div class="srow"><span class="slbl">👥 Eligibility</span><span class="sval" style="font-size:12px;font-family:'Inter',sans-serif">Bands 1–7 only</span></div>
+      <div class="srow"><span class="slbl">📋 Pre-approval</span><span class="sval" style="font-size:12px;font-family:'Inter',sans-serif">Must be authorised via scheduling</span></div>
+      <div class="srow"><span class="slbl">🌙 Unsocial vs OT</span><span class="sval" style="font-size:12px;font-family:'Inter',sans-serif">Whichever rate is higher — no double-dip</span></div>
+      <div class="srow"><span class="slbl">⏱ Max per week</span><span class="sval" style="font-size:12px;font-family:'Inter',sans-serif">60 hrs (with opt-out)</span></div>
+      <div class="srow"><span class="slbl">😴 Rest between shifts</span><span class="sval" style="font-size:12px;font-family:'Inter',sans-serif">11 hrs minimum — absolute rule</span></div>
+      <div class="srow"><span class="slbl">❌ Cancellation</span><span class="sval" style="font-size:12px;font-family:'Inter',sans-serif">48 hrs notice required</span></div>
+      <div class="srow"><span class="slbl">🚫 Restrictions</span><span class="sval" style="font-size:12px;font-family:'Inter',sans-serif">OT may be paused if on reconciliation plan</span></div>
+    </div>
+
+    <div class="ibox blue">
+      <strong>How unsocial vs overtime works:</strong><br>
+      You can't combine both rates. The app automatically applies whichever pays more.<br><br>
+      <strong>Example — Band 4 night overtime:</strong><br>
+      OT rate = ×1.5 · Night/Sat unsocial = ×1.30 → <strong>×1.5 applies</strong><br><br>
+      <strong>Example — Band 4 Sunday overtime:</strong><br>
+      OT rate = ×1.5 · Sunday enhancement = ×1.60 → <strong>×1.60 applies</strong>
+    </div>
   </div>
 
   <div class="tab-pane" id="tab-mileage">
@@ -1081,6 +1117,28 @@ function updateSummary(){
         <div class="tl-row"><div class="tl-time">${tl.e5}</div><div class="tl-dot" style="background:var(--red)"></div><div class="tl-body"><div class="tl-title">5 min — home area only</div><div class="tl-desc">Confirmed cardiac arrest with CPR in progress only</div></div></div>
         <div class="tl-row"><div class="tl-time">${tl.fin}</div><div class="tl-dot" style="background:var(--green)"></div><div class="tl-body"><div class="tl-title">End of shift</div><div class="tl-desc">Go home</div></div></div>
       </div>`;
+  }
+
+  if(activeTab==='overtime-tab'){
+    if(!selKey)return;
+    const sh=getSh(selKey);
+    const calcEl=document.getElementById('ot-tab-calc');
+    const resEl=document.getElementById('ot-tab-result');
+    if(sh.type==='overtime'&&sh.start&&sh.finish){
+      const op=calcOvertimePay(selKey,sh);
+      const fp=v=>`£${v.toFixed(2)}`;
+      calcEl.style.display='block';
+      resEl.innerHTML=`<div class="sbox">
+        <div class="srow"><span class="slbl">Paid hours</span><span class="sval">${fH(op.worked)}</span></div>
+        ${op.socH>0?`<div class="srow"><span class="slbl">Social hrs × ${op.socRate.toFixed(1)}</span><span class="sval" style="color:#9F1239">${fp(op.socP)}</span></div>`:''}
+        ${op.nsH>0?`<div class="srow"><span class="slbl">Night/Sat hrs × ${op.nsRate.toFixed(2)}</span><span class="sval blu">${fp(op.nsP)}</span></div>`:''}
+        ${op.sunH>0?`<div class="srow"><span class="slbl">Sunday hrs × ${op.sunRate.toFixed(2)}</span><span class="sval blu">${fp(op.sunP)}</span></div>`:''}
+        <div class="srow"><span class="slbl" style="font-weight:600">Estimated gross pay</span><span class="sval big grn">${fp(op.total)}</span></div>
+      </div>`;
+    } else {
+      calcEl.style.display='none';
+      resEl.innerHTML='';
+    }
   }
 
   if(activeTab==='mileage'){
