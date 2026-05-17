@@ -1660,18 +1660,17 @@ function calcRollingRelief() {
     const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const sh = getSh(key);
 
-    if (sh.type === 'off' || sh.type === 'none') {
-      // Rest day — no contracted hours expected, no hours worked
-    } else if (sh.type === 'sick' || sh.type === 'annual-leave') {
-      // Credited as contracted daily hours
+    if (sh.type === 'sick' || sh.type === 'annual-leave') {
+      // Credited as contracted daily hours (7.5hrs for full time)
       totalWorked += dailyContracted;
       totalContracted += dailyContracted;
-    } else if (sh.type !== 'none' && sh.start && sh.finish) {
-      // Actual shift worked
+    } else if (sh.type !== 'none' && sh.type !== 'off' && sh.start && sh.finish) {
+      // Actual shift worked — count hours worked vs contracted daily hours
       const p = calcPay(key, sh);
       totalWorked += p.worked;
       totalContracted += dailyContracted;
     }
+    // off, none, unlogged = ignored entirely
     d.setDate(d.getDate() + 1);
   }
 
