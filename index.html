@@ -597,23 +597,19 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
       <div id="rr-status-badge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--border);color:var(--txt2)">Not set up</div>
     </div>
     <div id="rr-balance-display" style="font-size:42px;font-weight:700;font-family:'DM Mono',monospace;color:var(--txt1);line-height:1">—</div>
-    <div id="rr-balance-label" style="font-size:12px;color:var(--txt3);margin-top:4px">Enter your details below to start tracking</div>
-
+    <div id="rr-balance-label" style="font-size:12px;color:var(--txt3);margin-top:4px">Add your GRS monthly figures below to start tracking</div>
     <!-- Visual gauge -->
     <div style="margin-top:14px">
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt3);margin-bottom:4px">
         <span>−22 hrs</span><span>Normal parameter</span><span>+22 hrs</span>
       </div>
       <div style="height:12px;border-radius:6px;background:var(--surface2);border:1px solid var(--border2);overflow:hidden;position:relative">
-        <!-- Coloured zones -->
         <div style="position:absolute;inset:0;display:flex">
           <div style="flex:1;background:#FEE2E2"></div>
           <div style="flex:3;background:#D1FAE5"></div>
           <div style="flex:1;background:#FEE2E2"></div>
         </div>
-        <!-- Centre line -->
         <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(0,0,0,0.15);transform:translateX(-50%)"></div>
-        <!-- Marker -->
         <div id="rr-gauge-marker" style="position:absolute;top:0;bottom:0;width:4px;border-radius:2px;background:var(--txt3);transform:translateX(-50%);left:50%;transition:left 0.5s,background 0.5s"></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--txt3);margin-top:3px">
@@ -622,72 +618,57 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
     </div>
   </div>
 
-  <!-- Breakdown -->
-  <div class="sbox" style="margin-bottom:12px" id="rr-breakdown">
-    <div class="srow"><span class="slbl">Opening balance (from letter)</span><span class="sval" id="rr-opening">—</span></div>
-    <div class="srow"><span class="slbl">Hours worked since start date</span><span class="sval" id="rr-worked">—</span></div>
-    <div class="srow"><span class="slbl">Hours contracted since start date</span><span class="sval" id="rr-contracted">—</span></div>
-    <div class="srow"><span class="slbl">Change since start date</span><span class="sval" id="rr-change">—</span></div>
-    <div class="srow"><span class="slbl" style="font-weight:600;color:var(--txt1)">Current balance</span><span class="sval big" id="rr-current">—</span></div>
-    <div class="srow"><span class="slbl">Normal parameter</span><span class="sval">±22.0 hrs</span></div>
-    <div class="srow"><span class="slbl">Headroom remaining</span><span class="sval" id="rr-headroom">—</span></div>
-  </div>
-
   <!-- Info box -->
   <div id="rr-advice" class="ibox green" style="margin-bottom:12px;display:none"></div>
+
+  <!-- Monthly history -->
+  <div id="rr-history-card" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow)">
+    <div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px">📅 Monthly GRS History</div>
+    <div id="rr-history-list"></div>
+  </div>
 
   <!-- 12-month projection -->
   <div id="rr-projection-card" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow)">
     <div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px">📈 12-Month Projection</div>
-    <div style="font-size:12px;color:var(--txt2);margin-bottom:12px;line-height:1.5">Based on your logged shift pattern — how many hours per week you're averaging.</div>
+    <div style="font-size:12px;color:var(--txt2);margin-bottom:12px;line-height:1.5">Based on your average monthly drift from real GRS data.</div>
     <div class="sbox">
-      <div class="srow"><span class="slbl">Avg hours worked per week</span><span class="sval" id="proj-weekly-avg">—</span></div>
-      <div class="srow"><span class="slbl">Contracted per week</span><span class="sval" id="proj-weekly-contracted">—</span></div>
-      <div class="srow"><span class="slbl">Weekly drift</span><span class="sval" id="proj-weekly-drift">—</span></div>
-      <div class="srow"><span class="slbl">Projected annual drift</span><span class="sval" id="proj-annual-drift">—</span></div>
+      <div class="srow"><span class="slbl">Average monthly drift</span><span class="sval" id="proj-monthly-drift">—</span></div>
+      <div class="srow"><span class="slbl">Projected drift over 12 months</span><span class="sval" id="proj-annual-drift">—</span></div>
       <div class="srow" style="background:var(--surface2)"><span class="slbl" style="font-weight:600;color:var(--txt1)">Projected balance in 12 months</span><span class="sval big" id="proj-12m">—</span></div>
     </div>
     <div id="proj-advice" style="margin-top:10px;padding:10px 14px;border-radius:var(--radius-sm);font-size:12px;line-height:1.6;border:1px solid"></div>
   </div>
 
-  <!-- Setup card -->
+  <!-- Add monthly entry -->
   <div class="card">
-    <div class="dp-row">
-      <div class="settings-label">Rolling Relief Setup</div>
-      <div style="font-size:12px;color:var(--txt2);margin-bottom:12px;line-height:1.5">Enter the details from your SWASFT rolling relief letter. The app will calculate your running balance using your logged shifts.</div>
+    <div class="dp-row" style="margin-bottom:12px">
+      <div class="settings-label">How to use this tracker</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:6px;line-height:1.6">
+        Each month, open GRS and check your <strong style="color:var(--txt1)">Margin +/−</strong> figure. Enter it here. The app tracks your trend and projects where you'll be in 12 months.<br><br>
+        <strong style="color:var(--nhs2)">Where to find it in GRS:</strong> Rolling Relief → select month → Summary tab → look at the <strong>Margin +/−</strong> column.
+      </div>
     </div>
     <div class="dp-row">
-      <div class="settings-label">Opening balance (hours) <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--txt3);font-size:11px">— from your SWASFT letter</span></div>
+      <div class="settings-label">Month</div>
+      <input type="month" id="rr-entry-month" class="txt-input" style="margin-top:6px;font-family:'DM Mono',monospace">
+    </div>
+    <div class="dp-row">
+      <div class="settings-label">GRS Margin +/− for that month</div>
       <div style="margin-top:8px">
         <div style="display:flex;gap:8px;margin-bottom:8px">
-          <button id="rr-sign-minus" onclick="setRRSign(-1)" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid var(--border2);background:var(--surface2);color:var(--txt2);font-size:16px;font-weight:700;cursor:pointer">− I owe hours</button>
-          <button id="rr-sign-plus" onclick="setRRSign(1)" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid var(--border2);background:var(--surface2);color:var(--txt2);font-size:16px;font-weight:700;cursor:pointer">+ I am owed hours</button>
+          <button id="rr-sign-minus" onclick="setRRSign(-1)" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid var(--border2);background:var(--surface2);color:var(--txt2);font-size:14px;font-weight:700;cursor:pointer">− Negative</button>
+          <button id="rr-sign-plus" onclick="setRRSign(1)" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid var(--border2);background:var(--surface2);color:var(--txt2);font-size:14px;font-weight:700;cursor:pointer">+ Positive</button>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <div id="rr-sign-display" style="font-size:24px;font-weight:700;font-family:'DM Mono',monospace;width:24px;color:var(--txt2)">?</div>
-          <input type="number" id="rr-opening-input" step="0.01" min="0" placeholder="e.g. 17.35" style="flex:1;font-size:18px;font-family:'DM Mono',monospace;font-weight:600;padding:10px 12px;border:2px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt1)">
+          <div id="rr-sign-display" style="font-size:24px;font-weight:700;font-family:'DM Mono',monospace;width:24px;color:var(--txt2)">−</div>
+          <input type="number" id="rr-margin-input" step="0.01" min="0" placeholder="e.g. 21.85" style="flex:1;font-size:18px;font-family:'DM Mono',monospace;font-weight:600;padding:10px 12px;border:2px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt1)">
           <span style="font-size:13px;color:var(--txt3)">hrs</span>
         </div>
-        <div style="font-size:11px;color:var(--txt3);margin-top:6px;line-height:1.5">Most people will select <strong style="color:var(--red)">− I owe hours</strong>. If your letter shows a negative number like −17.35, select − and enter 17.35.</div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:6px;line-height:1.5">Enter the number from GRS. If the GRS column shows −21:51, select Negative and enter 21.85 (convert mm to decimal: 51÷60=0.85).</div>
       </div>
     </div>
-    <div class="dp-row">
-      <div class="settings-label">Balance start date <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--txt3);font-size:11px">— default 1 April 2025 (SWASFT clean slate)</span></div>
-      <input type="date" id="rr-start-date" class="txt-input" style="margin-top:6px" value="2025-04-01">
-    </div>
-    <div class="dp-row" style="margin-bottom:0">
-      <div class="settings-label">Contracted weekly hours</div>
-      <div class="contract-btns" style="margin-bottom:8px">
-        <button class="cbtn" data-hours="37.5" id="rr-ft">Full time<br><span style="font-weight:400;font-size:10px">37.5 hrs/wk</span></button>
-        <button class="cbtn" data-hours="30" id="rr-pt1">Part time<br><span style="font-weight:400;font-size:10px">30 hrs/wk</span></button>
-        <button class="cbtn" data-hours="22.5" id="rr-pt2">Part time<br><span style="font-weight:400;font-size:10px">22.5 hrs/wk</span></button>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <input type="number" id="rr-weekly-hours" step="0.5" min="1" max="37.5" placeholder="e.g. 37.5" style="flex:1;font-size:18px;font-family:'DM Mono',monospace;font-weight:600;padding:10px 12px;border:2px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt1)">
-        <span style="font-size:13px;color:var(--txt3)">hrs/week</span>
-      </div>
-      <div style="font-size:11px;color:var(--txt3);margin-top:6px">Sick days and annual leave are credited as contracted daily hours (hours ÷ 5 working days).</div>
-    </div>
+    <button id="rr-add-entry" style="width:100%;padding:12px;background:var(--nhs);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer">+ Add Monthly Entry</button>
+    <div id="rr-add-status" style="display:none;margin-top:8px;padding:8px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:600"></div>
   </div>
 </div>
     <div class="policy-item"><div class="policy-dot"></div><div class="policy-text"><strong>Breaks (SWAST):</strong> Under 6hrs = no break · 6hrs to 11h59m = 30 min unpaid · 12hrs = 1 hour unpaid. If break not taken, go home early — pay stays the same.</div></div>
@@ -1596,8 +1577,224 @@ function buildCustomTypeBtns(){
 // ═══════════════════════════════════════════════════
 // ROLLING RELIEF TRACKER
 // ═══════════════════════════════════════════════════
-let rrSettings = { openingBalance: null, startDate: '2025-04-01', weeklyHours: null };
-let rrSign = -1; // default to negative (most common)
+// ═══════════════════════════════════════════════════
+// ROLLING RELIEF TRACKER — GRS Monthly Input
+// ═══════════════════════════════════════════════════
+let rrEntries = []; // [{month:'2026-02', margin:-4.28}, ...]
+let rrSign = -1;
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function setRRSign(sign) {
+  rrSign = sign;
+  document.getElementById('rr-sign-display').textContent = sign > 0 ? '+' : '−';
+  document.getElementById('rr-sign-display').style.color = sign > 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('rr-sign-minus').style.borderColor = sign < 0 ? 'var(--red)' : 'var(--border2)';
+  document.getElementById('rr-sign-minus').style.background = sign < 0 ? '#FEE2E2' : 'var(--surface2)';
+  document.getElementById('rr-sign-minus').style.color = sign < 0 ? '#991B1B' : 'var(--txt2)';
+  document.getElementById('rr-sign-plus').style.borderColor = sign > 0 ? 'var(--green)' : 'var(--border2)';
+  document.getElementById('rr-sign-plus').style.background = sign > 0 ? '#ECFDF5' : 'var(--surface2)';
+  document.getElementById('rr-sign-plus').style.color = sign > 0 ? '#065F46' : 'var(--txt2)';
+}
+
+function saveRR() {
+  try { localStorage.setItem('ks-rr2', JSON.stringify({entries: rrEntries})); } catch(e) {}
+}
+function loadRR() {
+  try {
+    const s = localStorage.getItem('ks-rr2');
+    if (s) { const d = JSON.parse(s); rrEntries = d.entries || []; }
+  } catch(e) {}
+  // Set default month to current month
+  const now = new Date();
+  document.getElementById('rr-entry-month').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  setRRSign(-1);
+  calcRollingRelief();
+}
+
+document.getElementById('rr-add-entry').addEventListener('click', () => {
+  const month = document.getElementById('rr-entry-month').value;
+  const raw = parseFloat(document.getElementById('rr-margin-input').value);
+  const status = document.getElementById('rr-add-status');
+
+  if (!month) { showAddStatus('Please select a month.', false); return; }
+  if (isNaN(raw) || raw < 0) { showAddStatus('Please enter a valid number (e.g. 21.85).', false); return; }
+
+  const margin = Math.round(rrSign * raw * 100) / 100;
+
+  // Replace if same month already exists
+  const idx = rrEntries.findIndex(e => e.month === month);
+  if (idx >= 0) {
+    rrEntries[idx].margin = margin;
+    showAddStatus(`✅ Updated ${fmtMonth(month)} — Margin: ${fmtHrs(margin)}`, true);
+  } else {
+    rrEntries.push({ month, margin });
+    rrEntries.sort((a,b) => a.month.localeCompare(b.month));
+    showAddStatus(`✅ Added ${fmtMonth(month)} — Margin: ${fmtHrs(margin)}`, true);
+  }
+
+  document.getElementById('rr-margin-input').value = '';
+  saveRR();
+  calcRollingRelief();
+});
+
+function showAddStatus(msg, ok) {
+  const el = document.getElementById('rr-add-status');
+  el.style.display = 'block';
+  el.style.background = ok ? '#ECFDF5' : '#FEF2F2';
+  el.style.color = ok ? '#065F46' : '#991B1B';
+  el.style.border = ok ? '1px solid #6EE7B7' : '1px solid #FCA5A5';
+  el.textContent = msg;
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+function fmtMonth(m) {
+  const [y, mo] = m.split('-');
+  return `${MONTHS_SHORT[parseInt(mo)-1]} ${y}`;
+}
+
+function fmtHrs(h) {
+  const sign = h >= 0 ? '+' : '';
+  return `${sign}${h.toFixed(2)} hrs`;
+}
+
+function calcRollingRelief() {
+  const balEl = document.getElementById('rr-balance-display');
+  const lblEl = document.getElementById('rr-balance-label');
+  const badgeEl = document.getElementById('rr-status-badge');
+  const cardEl = document.getElementById('rr-status-card');
+  const adviceEl = document.getElementById('rr-advice');
+  const LIMIT = 22;
+
+  if (rrEntries.length === 0) {
+    balEl.textContent = '—';
+    lblEl.textContent = 'Add your GRS monthly figures below to start tracking';
+    badgeEl.textContent = 'Not set up';
+    badgeEl.style.background = 'var(--border)'; badgeEl.style.color = 'var(--txt2)';
+    cardEl.style.borderColor = 'var(--border2)'; cardEl.style.background = 'var(--surface2)';
+    adviceEl.style.display = 'none';
+    document.getElementById('rr-gauge-marker').style.left = '50%';
+    document.getElementById('rr-gauge-marker').style.background = 'var(--txt3)';
+    document.getElementById('rr-history-card').style.display = 'none';
+    document.getElementById('rr-projection-card').style.display = 'none';
+    return;
+  }
+
+  // Current balance = most recent month's margin
+  const sorted = [...rrEntries].sort((a,b) => a.month.localeCompare(b.month));
+  const current = sorted[sorted.length - 1].margin;
+  const isOver = Math.abs(current) > LIMIT;
+  const isWarning = Math.abs(current) > LIMIT * 0.75;
+
+  let colour, bgColour, borderColour, badgeBg, badgeTxt, statusText;
+  if (isOver) {
+    colour='#991B1B'; bgColour='#FEE2E2'; borderColour='#F87171';
+    badgeBg='#FEE2E2'; badgeTxt='#991B1B'; statusText='⚠️ Outside normal parameter';
+  } else if (isWarning) {
+    colour='#92400E'; bgColour='#FEF3C7'; borderColour='#F59E0B';
+    badgeBg='#FEF3C7'; badgeTxt='#92400E'; statusText='🟡 Approaching limit';
+  } else {
+    colour='#065F46'; bgColour='#ECFDF5'; borderColour='#34D399';
+    badgeBg='#ECFDF5'; badgeTxt='#065F46'; statusText='✅ Within normal parameter';
+  }
+
+  balEl.textContent = fmtHrs(current);
+  balEl.style.color = colour;
+  lblEl.textContent = `GRS Margin as of ${fmtMonth(sorted[sorted.length-1].month)}`;
+  badgeEl.textContent = statusText;
+  badgeEl.style.background = badgeBg; badgeEl.style.color = badgeTxt;
+  cardEl.style.borderColor = borderColour; cardEl.style.background = bgColour;
+
+  const pct = Math.max(5, Math.min(95, 50 + (current / LIMIT) * 40));
+  const marker = document.getElementById('rr-gauge-marker');
+  marker.style.left = pct + '%'; marker.style.background = colour;
+
+  // Advice
+  adviceEl.style.display = 'block';
+  adviceEl.className = `ibox ${isOver ? 'red' : isWarning ? 'amber' : 'green'}`;
+  const headroom = Math.round((LIMIT - Math.abs(current)) * 100) / 100;
+  if (isOver) {
+    const excess = (Math.abs(current) - LIMIT).toFixed(2);
+    adviceEl.innerHTML = `<strong>Outside normal parameter.</strong> Your GRS Margin is ${fmtHrs(current)} — ${excess} hrs beyond the ±22 hr limit. Contact your line manager or ROC to agree a recovery plan.`;
+  } else if (isWarning) {
+    adviceEl.innerHTML = `<strong>Approaching the limit.</strong> You have ${headroom.toFixed(2)} hrs of headroom before you hit the ±22 hr limit. Keep an eye on this.`;
+  } else {
+    adviceEl.innerHTML = `<strong>All good.</strong> You are within the ±22 hr normal parameter — ${headroom.toFixed(2)} hrs of headroom remaining.`;
+  }
+
+  // Monthly history
+  const histCard = document.getElementById('rr-history-card');
+  histCard.style.display = 'block';
+  const histList = document.getElementById('rr-history-list');
+  histList.innerHTML = sorted.map((e,i) => {
+    const prev = i > 0 ? sorted[i-1].margin : null;
+    const drift = prev !== null ? e.margin - prev : null;
+    const driftStr = drift !== null ? `<span style="font-size:11px;color:${drift>=0?'var(--green)':'var(--red)'}">${drift>=0?'▲':'▼'} ${Math.abs(drift).toFixed(2)}</span>` : '';
+    const mColour = Math.abs(e.margin) > LIMIT ? '#991B1B' : Math.abs(e.margin) > LIMIT*0.75 ? '#92400E' : '#065F46';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:13px;color:var(--txt2)">${fmtMonth(e.month)}</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        ${driftStr}
+        <span style="font-size:13px;font-weight:700;font-family:'DM Mono',monospace;color:${mColour}">${fmtHrs(e.margin)}</span>
+        <button onclick="deleteRREntry('${e.month}')" style="width:24px;height:24px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--red);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+      </div>
+    </div>`;
+  }).reverse().join('');
+
+  // 12-month projection (need at least 2 months)
+  const projCard = document.getElementById('rr-projection-card');
+  if (sorted.length >= 2) {
+    projCard.style.display = 'block';
+    // Calculate average monthly drift
+    let totalDrift = 0;
+    for (let i = 1; i < sorted.length; i++) {
+      totalDrift += sorted[i].margin - sorted[i-1].margin;
+    }
+    const avgMonthlyDrift = totalDrift / (sorted.length - 1);
+    const projected12m = Math.round((current + avgMonthlyDrift * 12) * 100) / 100;
+    const proj12mSign = projected12m >= 0 ? '+' : '';
+    const driftSign = avgMonthlyDrift >= 0 ? '+' : '';
+
+    document.getElementById('proj-monthly-drift').textContent = `${driftSign}${avgMonthlyDrift.toFixed(2)} hrs/month`;
+    document.getElementById('proj-monthly-drift').style.color = avgMonthlyDrift >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('proj-annual-drift').textContent = `${driftSign}${(avgMonthlyDrift*12).toFixed(1)} hrs`;
+    document.getElementById('proj-annual-drift').style.color = avgMonthlyDrift >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('proj-12m').textContent = `${proj12mSign}${projected12m.toFixed(2)} hrs`;
+
+    const projIsOver = Math.abs(projected12m) > LIMIT;
+    const projIsWarn = Math.abs(projected12m) > LIMIT * 0.75;
+    document.getElementById('proj-12m').style.color = projIsOver ? 'var(--red)' : projIsWarn ? 'var(--amber)' : 'var(--green)';
+
+    const pa = document.getElementById('proj-advice');
+    if (projIsOver) {
+      const direction = projected12m < 0 ? 'under' : 'over';
+      const excess = (Math.abs(projected12m) - LIMIT).toFixed(1);
+      pa.style.background='#FEF2F2'; pa.style.color='#991B1B'; pa.style.borderColor='#FCA5A5';
+      pa.innerHTML = `<strong>⚠️ Action recommended.</strong> At your current rate you will be ${Math.abs(projected12m).toFixed(1)} hrs ${direction} contracted hours in 12 months — ${excess} hrs beyond the ±22 hr limit. Speak to your line manager or ROC now to get ahead of this.`;
+    } else if (projIsWarn) {
+      pa.style.background='#FFFBEB'; pa.style.color='#92400E'; pa.style.borderColor='#FCD34D';
+      pa.innerHTML = `<strong>🟡 Worth monitoring.</strong> At your current rate you'll be ${Math.abs(projected12m).toFixed(1)} hrs ${projected12m>=0?'over':'under'} in 12 months — approaching but within the ±22 hr limit.`;
+    } else {
+      pa.style.background='#ECFDF5'; pa.style.color='#065F46'; pa.style.borderColor='#6EE7B7';
+      pa.innerHTML = `<strong>✅ Looking good.</strong> At your current rate you'll be ${proj12mSign}${projected12m.toFixed(1)} hrs in 12 months — well within the ±22 hr normal parameter.`;
+    }
+  } else {
+    projCard.style.display = 'none';
+  }
+}
+
+function deleteRREntry(month) {
+  rrEntries = rrEntries.filter(e => e.month !== month);
+  saveRR(); calcRollingRelief();
+}
+
+load();
+loadCustomTypes();
+updateCustomTypesSummary();
+buildCustomTypeBtns();
+loadRR();
+</script>
+</body>
+</html>
 
 function setRRSign(sign) {
   rrSign = sign;
