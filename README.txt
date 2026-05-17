@@ -21,3 +21,9 @@ HOW TO USE
 - Scroll down to see your monthly stats
 
 Your data stays on your phone — nothing is sent anywhere.
+# KineticShift
+![KineticShift Logo](icon-192.png)
+
+NHS AfC Shift Pay Calculator — built for SWAST Gloucestershire.
+
+Log shifts · Calculate pay · Track rolling relief
