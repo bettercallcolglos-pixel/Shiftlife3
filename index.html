@@ -643,10 +643,18 @@ textarea:focus, select:focus, input:focus { outline: 2px solid var(--blue); bord
       <div style="font-size:12px;color:var(--txt2);margin-bottom:12px;line-height:1.5">Enter the details from your SWASFT rolling relief letter. The app will calculate your running balance using your logged shifts.</div>
     </div>
     <div class="dp-row">
-      <div class="settings-label">Opening balance (hours) <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--txt3);font-size:11px">— from your SWASFT letter, e.g. −17.35</span></div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-        <input type="number" id="rr-opening-input" step="0.01" placeholder="e.g. -17.35" style="flex:1;font-size:18px;font-family:'DM Mono',monospace;font-weight:600;padding:10px 12px;border:2px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt1)">
-        <span style="font-size:13px;color:var(--txt3)">hrs</span>
+      <div class="settings-label">Opening balance (hours) <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--txt3);font-size:11px">— from your SWASFT letter</span></div>
+      <div style="margin-top:8px">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button id="rr-sign-minus" onclick="setRRSign(-1)" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid var(--border2);background:var(--surface2);color:var(--txt2);font-size:16px;font-weight:700;cursor:pointer">− I owe hours</button>
+          <button id="rr-sign-plus" onclick="setRRSign(1)" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid var(--border2);background:var(--surface2);color:var(--txt2);font-size:16px;font-weight:700;cursor:pointer">+ I am owed hours</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="rr-sign-display" style="font-size:24px;font-weight:700;font-family:'DM Mono',monospace;width:24px;color:var(--txt2)">?</div>
+          <input type="number" id="rr-opening-input" step="0.01" min="0" placeholder="e.g. 17.35" style="flex:1;font-size:18px;font-family:'DM Mono',monospace;font-weight:600;padding:10px 12px;border:2px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt1)">
+          <span style="font-size:13px;color:var(--txt3)">hrs</span>
+        </div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:6px;line-height:1.5">Most people will select <strong style="color:var(--red)">− I owe hours</strong>. If your letter shows a negative number like −17.35, select − and enter 17.35.</div>
       </div>
     </div>
     <div class="dp-row">
@@ -1575,20 +1583,50 @@ function buildCustomTypeBtns(){
 // ROLLING RELIEF TRACKER
 // ═══════════════════════════════════════════════════
 let rrSettings = { openingBalance: null, startDate: '2025-04-01', weeklyHours: null };
+let rrSign = -1; // default to negative (most common)
+
+function setRRSign(sign) {
+  rrSign = sign;
+  document.getElementById('rr-sign-display').textContent = sign > 0 ? '+' : '−';
+  document.getElementById('rr-sign-display').style.color = sign > 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('rr-sign-minus').style.borderColor = sign < 0 ? 'var(--red)' : 'var(--border2)';
+  document.getElementById('rr-sign-minus').style.background = sign < 0 ? '#FEE2E2' : 'var(--surface2)';
+  document.getElementById('rr-sign-minus').style.color = sign < 0 ? 'var(--red)' : 'var(--txt2)';
+  document.getElementById('rr-sign-plus').style.borderColor = sign > 0 ? 'var(--green)' : 'var(--border2)';
+  document.getElementById('rr-sign-plus').style.background = sign > 0 ? '#ECFDF5' : 'var(--surface2)';
+  document.getElementById('rr-sign-plus').style.color = sign > 0 ? 'var(--green)' : 'var(--txt2)';
+  updateOpeningBalance();
+}
+
+function updateOpeningBalance() {
+  const raw = parseFloat(document.getElementById('rr-opening-input').value);
+  if (!isNaN(raw) && raw >= 0) {
+    rrSettings.openingBalance = rrSign * raw;
+  } else {
+    rrSettings.openingBalance = null;
+  }
+  saveRR(); calcRollingRelief();
+}
 
 function saveRR() {
-  try { localStorage.setItem('ks-rr', JSON.stringify(rrSettings)); } catch(e) {}
+  try { localStorage.setItem('ks-rr', JSON.stringify({...rrSettings, rrSign})); } catch(e) {}
 }
 function loadRR() {
   try {
     const s = localStorage.getItem('ks-rr');
-    if (s) rrSettings = Object.assign({}, rrSettings, JSON.parse(s));
+    if (s) {
+      const d = JSON.parse(s);
+      rrSettings = Object.assign({}, rrSettings, d);
+      if (d.rrSign !== undefined) rrSign = d.rrSign;
+    }
   } catch(e) {}
   // Populate fields
-  if (rrSettings.openingBalance !== null) document.getElementById('rr-opening-input').value = rrSettings.openingBalance;
+  if (rrSettings.openingBalance !== null) {
+    document.getElementById('rr-opening-input').value = Math.abs(rrSettings.openingBalance);
+  }
   if (rrSettings.startDate) document.getElementById('rr-start-date').value = rrSettings.startDate;
   if (rrSettings.weeklyHours !== null) document.getElementById('rr-weekly-hours').value = rrSettings.weeklyHours;
-  // Highlight contract button
+  setRRSign(rrSign);
   document.querySelectorAll('[data-hours]').forEach(b => {
     b.classList.toggle('active', parseFloat(b.dataset.hours) === rrSettings.weeklyHours);
   });
@@ -1605,11 +1643,7 @@ document.querySelectorAll('[data-hours]').forEach(btn => {
   });
 });
 
-document.getElementById('rr-opening-input').addEventListener('input', () => {
-  const v = parseFloat(document.getElementById('rr-opening-input').value);
-  rrSettings.openingBalance = isNaN(v) ? null : v;
-  saveRR(); calcRollingRelief();
-});
+document.getElementById('rr-opening-input').addEventListener('input', updateOpeningBalance);
 document.getElementById('rr-start-date').addEventListener('change', () => {
   rrSettings.startDate = document.getElementById('rr-start-date').value;
   saveRR(); calcRollingRelief();
@@ -1648,30 +1682,59 @@ function calcRollingRelief() {
   const startD = new Date(startDate);
   const today = new Date();
   today.setHours(0,0,0,0);
-  const dailyContracted = weeklyHours / 5; // contracted hours per working day
-  const dailyContractedAll = weeklyHours / 7; // spread over 7 days for calendar calc
+  const dailyContracted = weeklyHours / 5; // sick/AL credit rate
+
+  // ── WEEKLY CALCULATION ──
+  // For each week (Mon–Sun) since start date that has any logged entry,
+  // compare total hours worked/credited to contracted weekly hours.
+  // Weeks with NO entries at all are skipped (not yet logged).
+
+  function getWeekMon(d) {
+    const day = d.getDay(); // 0=Sun
+    const diff = (day === 0) ? -6 : 1 - day;
+    const mon = new Date(d);
+    mon.setDate(d.getDate() + diff);
+    mon.setHours(0,0,0,0);
+    return mon;
+  }
 
   let totalWorked = 0;
   let totalContracted = 0;
 
-  // Loop through every day from startDate to today
-  const d = new Date(startD);
-  while (d <= today) {
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    const sh = getSh(key);
+  const startWeekMon = getWeekMon(startD);
+  const todayWeekMon = getWeekMon(today);
+  const cursor = new Date(startWeekMon);
 
-    if (sh.type === 'sick' || sh.type === 'annual-leave') {
-      // Credited as contracted daily hours (7.5hrs for full time)
-      totalWorked += dailyContracted;
-      totalContracted += dailyContracted;
-    } else if (sh.type !== 'none' && sh.type !== 'off' && sh.start && sh.finish) {
-      // Actual shift worked — count hours worked vs contracted daily hours
-      const p = calcPay(key, sh);
-      totalWorked += p.worked;
-      totalContracted += dailyContracted;
+  while (cursor <= todayWeekMon) {
+    let weekWorked = 0;
+    let weekHasAnyEntry = false;
+
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(cursor);
+      day.setDate(cursor.getDate() + i);
+      if (day > today) break;
+
+      const key = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+      const sh = getSh(key);
+
+      if (sh.type === 'sick' || sh.type === 'annual-leave') {
+        weekWorked += dailyContracted; // credited as contracted daily hours
+        weekHasAnyEntry = true;
+      } else if (sh.type === 'off') {
+        weekHasAnyEntry = true; // rest day logged — week counts
+      } else if (sh.type !== 'none' && sh.start && sh.finish) {
+        const p = calcPay(key, sh);
+        weekWorked += p.worked;
+        weekHasAnyEntry = true;
+      }
     }
-    // off, none, unlogged = ignored entirely
-    d.setDate(d.getDate() + 1);
+
+    if (weekHasAnyEntry) {
+      totalWorked += weekWorked;
+      totalContracted += weeklyHours;
+    }
+
+    cursor.setDate(cursor.getDate() + 7);
   }
 
   const change = totalWorked - totalContracted;
