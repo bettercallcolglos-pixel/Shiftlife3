@@ -74,10 +74,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cell-type.late{color:#5a4200;}
 .cell-time{font-size:14px;color:var(--subtext);line-height:1.3;}
 .cell-loc{font-size:13px;color:var(--grey);font-style:italic;margin-top:1px;}
-.cell-dots{position:absolute;bottom:4px;right:4px;display:flex;gap:2px;}
+.cell-dots{display:inline-flex;gap:3px;vertical-align:middle;margin-left:4px;}
 .cell-dot{width:6px;height:6px;border-radius:50%;}
 .cell-dot.ot{background:var(--red);}
 .cell-dot.note{background:#3B82F6;}
+.cell-dot.late{background:var(--orange);}
+.cell-dot.break{background:var(--teal);}
 /* DETAIL PANEL */
 .detail-panel{background:var(--card);border-radius:var(--radius) var(--radius) 0 0;box-shadow:0 -4px 20px rgba(0,0,0,0.1);padding:16px;margin:0 0 8px 0;}
 .detail-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
@@ -229,6 +231,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="legend-item"><div class="legend-dot" style="background:#FFD54F"></div>Late</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div><span style="color:var(--red)">●</span> OT</div>
     <div class="legend-item"><div class="legend-dot" style="background:#3B82F6"></div>Note</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>Late</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div>Break</div>
     <div style="margin-left:auto;font-size:11px;color:var(--subtext);">Tap any day</div>
   </div>
 
@@ -333,8 +337,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="tab-panel" id="tab-eos">
       <div class="form-row">
         <div class="form-group">
-          <label>Actual Finish Time</label>
-          <input type="time" id="actualFinish" oninput="calcOverrun()"/>
+          <label>Minutes Late</label>
+          <input type="number" id="overrunMinsInput" placeholder="e.g. 45" min="0" step="1" oninput="calcOverrun()"/>
         </div>
         <div class="form-group">
           <label>Job Number</label>
@@ -573,7 +577,7 @@ function init(){
   // OT calc live
   document.getElementById('otHoursTab').addEventListener('input', calcOt);
   document.getElementById('otRate').addEventListener('input', calcOt);
-  document.getElementById('actualFinish').addEventListener('input', calcOverrun);
+  // overrun driven by overrunMinsInput oninput
 }
 
 // ─── STORAGE ──────────────────────────────────────────────────
@@ -634,7 +638,10 @@ function renderCalendar(){
     cell.className = `cal-cell ${shift ? shift.type : ''} ${isToday?'today':''} ${isSelected?'selected':''}`;
     cell.onclick = () => openDetail(dateStr);
 
-    let html = `<div class="cell-date">${d}</div>`;
+    // Build dots inline next to date
+    let lateDot = (shift && shift.overrunMins > 0) ? `<span class="cell-dot late" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--orange);margin-left:3px;vertical-align:middle;"></span>` : '';
+    let breakDot = (shift && shift.food) ? `<span class="cell-dot break" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--teal);margin-left:3px;vertical-align:middle;"></span>` : '';
+    let html = `<div class="cell-date">${d}${lateDot}${breakDot}</div>`;
     if(shift && shift.type !== 'off'){
       const typeLabels = {days:'DAYS',nights:'NIGHTS',mids:'MIDS',late:'LATE',sick:'SICK',al:'A/L',ot_shift:'OT SHIFT'};
       html += `<div class="cell-type ${shift.type}">${typeLabels[shift.type]||shift.type.toUpperCase()}</div>`;
@@ -644,11 +651,11 @@ function renderCalendar(){
       html += `<div class="cell-type off">OFF</div>`;
     }
 
-    // Dots
+    // Dots (OT and notes remain at bottom right)
     let dots = '';
     if(shift && shift.ot) dots += `<div class="cell-dot ot"></div>`;
     if(shift && shift.notes) dots += `<div class="cell-dot note"></div>`;
-    if(dots) html += `<div class="cell-dots">${dots}</div>`;
+    if(dots) html += `<div class="cell-dots" style="position:absolute;bottom:4px;right:4px;display:flex;gap:2px;">${dots}</div>`;
 
     cell.innerHTML = html;
     grid.appendChild(cell);
@@ -681,7 +688,7 @@ function openDetail(dateStr){
   document.getElementById('otHours').value = shift.otHours || '';
   document.getElementById('notesInput').value = shift.notes || '';
   document.getElementById('mileageInput').value = shift.mileage || '';
-  document.getElementById('actualFinish').value = shift.actualFinish || '';
+  document.getElementById('overrunMinsInput').value = shift.overrunMins || '';
   document.getElementById('jobNumber').value = shift.jobNumber || '';
   document.getElementById('otHoursTab').value = shift.otHours || '';
   calcOverrun();
@@ -790,14 +797,8 @@ function saveMileage(){
 function saveEos(){
   if(!selectedDate) return;
   shifts[selectedDate] = shifts[selectedDate] || { type:'off' };
-  shifts[selectedDate].actualFinish = document.getElementById('actualFinish').value;
+  shifts[selectedDate].overrunMins = parseInt(document.getElementById('overrunMinsInput').value) || 0;
   shifts[selectedDate].jobNumber = document.getElementById('jobNumber').value;
-  const end = shifts[selectedDate].end;
-  if(end && shifts[selectedDate].actualFinish){
-    let diff = timeToMins(shifts[selectedDate].actualFinish) - timeToMins(end);
-    if(diff < -120) diff += 1440;
-    shifts[selectedDate].overrunMins = diff > 0 ? diff : 0;
-  }
   saveData(); renderCalendar(); updateStats(); showToast('Late finish saved ✅');
 }
 
@@ -932,20 +933,13 @@ function updateStats(){
 }
 
 function calcOverrun(){
-  const end = document.getElementById('endTime').value;
-  const actual = document.getElementById('actualFinish').value;
+  const mins = parseInt(document.getElementById('overrunMinsInput').value) || 0;
   const disp = document.getElementById('overrunDisplay');
-  if(!end || !actual){ disp.textContent=''; return; }
-  let diff = timeToMins(actual) - timeToMins(end);
-  if(diff < -120) diff += 1440;
-  if(diff > 0){
-    const h = Math.floor(diff/60), m = diff%60;
-    const label = h > 0 ? `${h}h ${m}m` : `${diff} mins`;
+  if(mins > 0){
+    const h = Math.floor(mins/60), m = mins%60;
+    const label = h > 0 ? `${h}h ${m}m` : `${mins} mins`;
     disp.textContent = `⚠️ Late finish: ${label} overrun`;
     disp.style.color = 'var(--orange)';
-  } else if(actual) {
-    disp.textContent = '✅ Finished on time';
-    disp.style.color = 'var(--green)';
   } else {
     disp.textContent = '';
   }
