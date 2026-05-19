@@ -8,6 +8,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="KineticShift"/>
 <link rel="manifest" href="manifest.json"/>
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <title>KineticShift – NHS Pay Calculator</title>
 <style>
 :root{
@@ -172,6 +176,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </style>
 </head>
 <body>
+
+<!-- FIREBASE LOGIN BANNER -->
+<div id="loginBanner" style="background:var(--nhs-blue);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+  <div>
+    <div style="font-size:14px;font-weight:700;">☁️ Sign in to sync your shifts</div>
+    <div style="font-size:11px;opacity:0.8;margin-top:2px;">Your data will be saved across all your devices</div>
+  </div>
+  <button onclick="signInWithGoogle()" style="background:var(--orange);border:none;color:#fff;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Sign in with Google</button>
+</div>
+
+<!-- LOGGED IN BAR -->
+<div id="loggedInBar" class="hidden" style="background:#1a7a42;color:#fff;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;">
+  <div style="font-size:12px;font-weight:600;"><span id="syncBadge">☁️ Synced</span> — <span id="userEmail"></span></div>
+  <button onclick="handleSignOut()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;">Sign out</button>
+</div>
 
 <!-- INSTALL BANNER -->
 <div class="install-banner hidden" id="installBanner">
@@ -528,6 +547,104 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </nav>
 
 <script>
+// ─── FIREBASE CONFIG ──────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyA2sQ_P594REZHuanJdaR2RZyhzcafLkPE",
+  authDomain: "kinetic-shift.firebaseapp.com",
+  projectId: "kinetic-shift",
+  storageBucket: "kinetic-shift.firebasestorage.app",
+  messagingSenderId: "72111070279",
+  appId: "1:72111070279:web:f9ee7c25e17d2bc0472562",
+  measurementId: "G-PWBYPYECZ6"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+let currentUser = null;
+let syncTimeout = null;
+
+// ─── AUTH ─────────────────────────────────────────────────────
+function signInWithGoogle(){
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err => showToast('Sign in failed: ' + err.message));
+}
+
+function handleSignOut(){
+  auth.signOut().then(() => { showToast('Signed out'); renderCalendar(); updateStats(); });
+}
+
+auth.onAuthStateChanged(user => {
+  currentUser = user;
+  if(user){
+    document.getElementById('loginBanner').classList.add('hidden');
+    document.getElementById('loggedInBar').classList.remove('hidden');
+    document.getElementById('userEmail').textContent = user.email;
+    loadFromFirebase();
+  } else {
+    document.getElementById('loginBanner').classList.remove('hidden');
+    document.getElementById('loggedInBar').classList.add('hidden');
+    document.getElementById('userEmail').textContent = '';
+  }
+});
+
+// ─── FIREBASE SYNC ────────────────────────────────────────────
+function scheduleSync(){
+  clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(saveToFirebase, 1500);
+}
+
+function saveToFirebase(){
+  if(!currentUser) return;
+  const uid = currentUser.uid;
+  db.collection('users').doc(uid).set({
+    shifts:   shifts,
+    settings: settings,
+    relief:   relief,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    showSyncIndicator('☁️ Saved');
+  }).catch(err => {
+    showSyncIndicator('⚠️ Sync failed');
+    console.error(err);
+  });
+}
+
+function loadFromFirebase(){
+  if(!currentUser) return;
+  const uid = currentUser.uid;
+  showSyncIndicator('☁️ Loading...');
+  db.collection('users').doc(uid).get().then(doc => {
+    if(doc.exists){
+      const data = doc.data();
+      if(data.shifts)   shifts   = data.shifts;
+      if(data.settings) settings = {...settings, ...data.settings};
+      if(data.relief)   relief   = data.relief;
+      loadSettings();
+      renderCalendar();
+      updateStats();
+      renderReliefMonths();
+      showSyncIndicator('☁️ Synced');
+      showToast('Data loaded from cloud ☁️');
+    } else {
+      // No cloud data yet — upload local data
+      saveToFirebase();
+    }
+  }).catch(err => {
+    showSyncIndicator('⚠️ Load failed');
+    console.error(err);
+  });
+}
+
+function showSyncIndicator(msg){
+  const bar = document.getElementById('loggedInBar');
+  if(!bar || bar.classList.contains('hidden')) return;
+  const indicator = bar.querySelector('div');
+  if(indicator) indicator.textContent = msg + ' — ' + (currentUser ? currentUser.email : '');
+  setTimeout(() => {
+    if(currentUser) indicator.textContent = '☁️ Synced — ' + currentUser.email;
+  }, 2500);
+}
+
 // ─── AUTO-SAVE ────────────────────────────────────────────────
 let autoSaveTimer = null;
 function triggerAutoSave(){
@@ -592,6 +709,8 @@ function saveData(){
   localStorage.setItem('ks_shifts',   JSON.stringify(shifts));
   localStorage.setItem('ks_relief',   JSON.stringify(relief));
   localStorage.setItem('ks_settings', JSON.stringify(settings));
+  // Also sync to Firebase if available and logged in
+  if(typeof window.scheduleSync === 'function') window.scheduleSync();
 }
 
 // ─── CALENDAR ──────────────────────────────────────────────────
@@ -1267,6 +1386,100 @@ function showToast(msg){
 // ─── START ────────────────────────────────────────────────────
 init();
 renderReliefMonths();
+
+// ─── FIREBASE — initialised after app is ready ────────────────
+(function initFirebase(){
+  try {
+    const firebaseConfig = {
+      apiKey: "AIzaSyA2sQ_P594REZHuanJdaR2RZyhzcafLkPE",
+      authDomain: "kinetic-shift.firebaseapp.com",
+      projectId: "kinetic-shift",
+      storageBucket: "kinetic-shift.firebasestorage.app",
+      messagingSenderId: "72111070279",
+      appId: "1:72111070279:web:f9ee7c25e17d2bc0472562"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    window.fbAuth = firebase.auth();
+    window.fbDb   = firebase.firestore();
+    window.currentUser  = null;
+    window.syncTimeout  = null;
+
+    window.signInWithGoogle = function(){
+      const provider = new firebase.auth.GoogleAuthProvider();
+      fbAuth.signInWithPopup(provider).catch(err => showToast('Sign in failed: ' + err.message));
+    };
+
+    window.handleSignOut = function(){
+      fbAuth.signOut().then(() => showToast('Signed out ✅'));
+    };
+
+    window.scheduleSync = function(){
+      clearTimeout(window.syncTimeout);
+      window.syncTimeout = setTimeout(saveToFirebase, 1500);
+    };
+
+    window.saveToFirebase = function(){
+      if(!window.currentUser) return;
+      fbDb.collection('users').doc(window.currentUser.uid).set({
+        shifts:    shifts,
+        settings:  settings,
+        relief:    relief,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => showSyncBadge('☁️ Saved'))
+        .catch(err => { showSyncBadge('⚠️ Sync failed'); console.error(err); });
+    };
+
+    window.loadFromFirebase = function(){
+      if(!window.currentUser) return;
+      showSyncBadge('☁️ Loading...');
+      fbDb.collection('users').doc(window.currentUser.uid).get().then(doc => {
+        if(doc.exists){
+          const data = doc.data();
+          if(data.shifts)   shifts   = data.shifts;
+          if(data.settings) settings = {...settings, ...data.settings};
+          if(data.relief)   relief   = data.relief;
+          loadSettings();
+          renderCalendar();
+          updateStats();
+          renderReliefMonths();
+          showSyncBadge('☁️ Synced');
+          showToast('Shifts loaded from cloud ☁️');
+        } else {
+          saveToFirebase();
+          showSyncBadge('☁️ Synced');
+        }
+      }).catch(err => { showSyncBadge('⚠️ Load failed'); console.error(err); });
+    };
+
+    window.showSyncBadge = function(msg){
+      const el = document.getElementById('syncBadge');
+      if(el) el.textContent = msg;
+      setTimeout(() => { if(el) el.textContent = '☁️ Synced'; }, 2500);
+    };
+
+    fbAuth.onAuthStateChanged(user => {
+      window.currentUser = user;
+      const loginBanner  = document.getElementById('loginBanner');
+      const loggedInBar  = document.getElementById('loggedInBar');
+      const emailEl      = document.getElementById('userEmail');
+      if(user){
+        if(loginBanner)  loginBanner.classList.add('hidden');
+        if(loggedInBar)  loggedInBar.classList.remove('hidden');
+        if(emailEl)      emailEl.textContent = user.email;
+        loadFromFirebase();
+      } else {
+        if(loginBanner)  loginBanner.classList.remove('hidden');
+        if(loggedInBar)  loggedInBar.classList.add('hidden');
+        if(emailEl)      emailEl.textContent = '';
+      }
+    });
+
+  } catch(e){
+    console.warn('Firebase init failed:', e);
+    // App still works offline with localStorage
+  }
+})();
 </script>
 </body>
 </html>
