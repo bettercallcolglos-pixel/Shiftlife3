@@ -166,6 +166,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .mileage-result{background:#F0F9F4;border-radius:10px;padding:12px;margin-top:10px;text-align:center;}
 .mileage-amount{font-size:28px;font-weight:800;color:var(--green);}
 .overrun-display{font-size:13px;color:var(--orange);font-weight:700;margin-top:4px;}
+.break-preset-btn{border:2px solid #D1DAE6;border-radius:8px;padding:8px 4px;font-size:12px;font-weight:700;
+  cursor:pointer;background:#fff;color:var(--subtext);transition:all 0.15s;font-family:inherit;}
+.break-preset-btn.active{border-color:var(--nhs-mid);background:var(--nhs-mid);color:#fff;}
 </style>
 </head>
 <body>
@@ -451,9 +454,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <label>AfC Band</label>
         <input type="text" id="settingBand" placeholder="e.g. Band 5" oninput="saveSettings()"/>
       </div>
-      <div class="form-group">
+      <div class="form-group" style="margin-bottom:10px">
         <label>Hourly Rate (£)</label>
         <input type="number" id="settingHourlyRate" placeholder="15.93" value="15.93" step="0.01" min="0" oninput="saveSettings()"/>
+      </div>
+      <div class="form-group">
+        <label>Unpaid Break Deduction per Shift</label>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">
+          <button class="break-preset-btn" onclick="setBreakPreset(0)"  data-mins="0">None</button>
+          <button class="break-preset-btn" onclick="setBreakPreset(30)" data-mins="30">30 min</button>
+          <button class="break-preset-btn" onclick="setBreakPreset(45)" data-mins="45">45 min</button>
+          <button class="break-preset-btn" onclick="setBreakPreset(60)" data-mins="60">60 min</button>
+        </div>
+        <input type="number" id="settingBreakMins" placeholder="0" value="0" step="1" min="0" max="120"
+               oninput="saveSettings(); highlightBreakPreset();"
+               style="width:100%;border:1.5px solid #D1DAE6;border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;background:#fff;color:var(--text);outline:none;"/>
+        <div style="font-size:11px;color:var(--subtext);margin-top:5px;">
+          ⏱️ Deducted from each worked shift when calculating actual hours for the Relief Tracker — matches your SWAST records.
+        </div>
       </div>
     </div>
     <div class="settings-card">
@@ -524,7 +542,7 @@ let currentYear  = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
 let selectedDate = null;
 let shifts   = {};
-let settings = { hourlyRate:15.93, band:'', name:'', station:'', trust:'', nhsStart:'' };
+let settings = { hourlyRate:15.93, band:'', name:'', station:'', trust:'', nhsStart:'', breakMins:0 };
 let relief   = {};
 
 const MONTHS       = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -833,9 +851,11 @@ function calcUnsocialHours(dateStr, start, end){
 
 // ─── AUTO-CALCULATE ACTUAL HOURS FOR RELIEF TRACKER ───────────
 // Adds up shift hours (worked types only) + overrun minutes for the current month.
+// Deducts the unpaid break setting per shift to match SWAST records.
 // OT hours are NOT included — they are paid separately and don't affect relief balance.
 function calcMonthActualHours(){
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const breakDeductHrs = (settings.breakMins || 0) / 60; // convert mins to hours
   let totalHours = 0;
 
   for(let d = 1; d <= daysInMonth; d++){
@@ -845,7 +865,9 @@ function calcMonthActualHours(){
 
     // Only count shifts where actual work was done (not sick, AL, off)
     if(WORKED_TYPES.includes(sh.type) && sh.start && sh.end){
-      totalHours += calcShiftHours(sh.start, sh.end);
+      const shiftHours = calcShiftHours(sh.start, sh.end);
+      // Deduct unpaid break — never go below 0 for a single shift
+      totalHours += Math.max(0, shiftHours - breakDeductHrs);
     }
 
     // Add overrun minutes as hours (not overtime — just late finishes)
@@ -987,17 +1009,36 @@ function saveSettings(){
   settings.station    = document.getElementById('settingStation').value;
   settings.trust      = document.getElementById('settingTrust').value;
   settings.nhsStart   = document.getElementById('settingNhsStart').value;
+  settings.breakMins  = parseInt(document.getElementById('settingBreakMins').value) || 0;
   saveData();
   updateStats();
+  highlightBreakPreset();
+}
+
+function setBreakPreset(mins){
+  document.getElementById('settingBreakMins').value = mins;
+  settings.breakMins = mins;
+  saveData();
+  updateStats();
+  highlightBreakPreset();
+}
+
+function highlightBreakPreset(){
+  const current = parseInt(document.getElementById('settingBreakMins').value) || 0;
+  document.querySelectorAll('.break-preset-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.mins) === current);
+  });
 }
 
 function loadSettings(){
-  if(settings.hourlyRate) document.getElementById('settingHourlyRate').value = settings.hourlyRate;
-  if(settings.band)       document.getElementById('settingBand').value       = settings.band;
-  if(settings.name)       document.getElementById('settingName').value       = settings.name;
-  if(settings.station)    document.getElementById('settingStation').value    = settings.station;
-  if(settings.trust)      document.getElementById('settingTrust').value      = settings.trust;
-  if(settings.nhsStart)   document.getElementById('settingNhsStart').value  = settings.nhsStart;
+  if(settings.hourlyRate)           document.getElementById('settingHourlyRate').value = settings.hourlyRate;
+  if(settings.band)                 document.getElementById('settingBand').value       = settings.band;
+  if(settings.name)                 document.getElementById('settingName').value       = settings.name;
+  if(settings.station)              document.getElementById('settingStation').value    = settings.station;
+  if(settings.trust)                document.getElementById('settingTrust').value      = settings.trust;
+  if(settings.nhsStart)             document.getElementById('settingNhsStart').value  = settings.nhsStart;
+  if(settings.breakMins !== undefined) document.getElementById('settingBreakMins').value = settings.breakMins;
+  highlightBreakPreset();
 }
 
 // ─── ROLLING RELIEF ────────────────────────────────────────────
