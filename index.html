@@ -703,6 +703,27 @@ const SHIFT_DEFAULTS = {
 // Types that count as actual worked shifts for relief tracker
 const WORKED_TYPES = ['days','nights','mids','late','ot_shift'];
 
+// ─── UK BANK HOLIDAYS ─────────────────────────────────────────
+// Standard England & Wales bank holidays — updated annually
+const UK_BANK_HOLIDAYS = new Set([
+  // 2024
+  '2024-01-01','2024-03-29','2024-04-01','2024-05-06','2024-05-27',
+  '2024-08-26','2024-12-25','2024-12-26',
+  // 2025
+  '2025-01-01','2025-04-18','2025-04-21','2025-05-05','2025-05-26',
+  '2025-08-25','2025-12-25','2025-12-26',
+  // 2026
+  '2026-01-01','2026-04-03','2026-04-06','2026-05-04','2026-05-25',
+  '2026-08-31','2026-12-25','2026-12-28',
+  // 2027
+  '2027-01-01','2027-03-26','2027-03-29','2027-05-03','2027-05-31',
+  '2027-08-30','2027-12-27','2027-12-28',
+]);
+
+function isBankHoliday(dateStr){
+  return UK_BANK_HOLIDAYS.has(dateStr);
+}
+
 // ─── INIT ──────────────────────────────────────────────────────
 function init(){
   loadData();
@@ -778,10 +799,12 @@ function renderCalendar(){
     cell.className = `cal-cell ${shift ? shift.type : ''} ${isToday?'today':''} ${isSelected?'selected':''}`;
     cell.onclick = () => openDetail(dateStr);
 
+    const isBH   = isBankHoliday(dateStr);
+    let bhIndicator = isBH ? `<span style="display:inline-block;font-size:8px;margin-left:2px;vertical-align:middle;" title="Bank Holiday">🏦</span>` : '';
     let lateDot  = (shift && shift.overrunMins > 0) ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--orange);margin-left:3px;vertical-align:middle;"></span>` : '';
     let breakDot = (shift && shift.food) ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--teal);margin-left:3px;vertical-align:middle;"></span>` : '';
 
-    let html = `<div class="cell-date">${d}${lateDot}${breakDot}</div>`;
+    let html = `<div class="cell-date">${d}${bhIndicator}${lateDot}${breakDot}</div>`;
     if(shift && shift.type !== 'off'){
       const typeLabels = {days:'DAYS',nights:'NIGHTS',mids:'MIDS',late:'LATE',sick:'SICK',al:'A/L',ot_shift:'OT SHIFT'};
       html += `<div class="cell-type ${shift.type}">${typeLabels[shift.type]||shift.type.toUpperCase()}</div>`;
@@ -969,28 +992,40 @@ function calcShiftHours(start, end){
 }
 
 function calcUnsocialHours(dateStr, start, end){
-  if(!start || !end) return { social:0, unsocial:0, sunday:0 };
+  if(!start || !end) return { social:0, unsocial:0, sunday:0, bankHoliday:0 };
   const [y,m,d] = dateStr.split('-').map(Number);
   let s = timeToMins(start), e = timeToMins(end);
   if(e <= s) e += 1440;
 
-  let social=0, unsocial=0, sunday=0;
+  let social=0, unsocial=0, sunday=0, bankHoliday=0;
   for(let t = s; t < e; t++){
-    const tMod   = t % 1440;
-    const curDay = new Date(y, m-1, d + Math.floor(t/1440)).getDay();
-    if(curDay === 0){
+    const tMod    = t % 1440;
+    const dayOffset = Math.floor(t/1440);
+    const curDate = new Date(y, m-1, d + dayOffset);
+    const curDateStr = `${curDate.getFullYear()}-${String(curDate.getMonth()+1).padStart(2,'0')}-${String(curDate.getDate()).padStart(2,'0')}`;
+    const curDay  = curDate.getDay();
+    const isBH    = isBankHoliday(curDateStr);
+
+    if(isBH){
+      // Bank holiday — 60% enhancement (same as Sunday)
+      bankHoliday += 1/60;
+    } else if(curDay === 0){
+      // Sunday — 60% enhancement
       sunday += 1/60;
     } else if(curDay === 6){
+      // Saturday — 30% unsocial enhancement
       unsocial += 1/60;
     } else {
+      // Weekday — social (06:00-20:00) or unsocial (20:00-06:00)
       if(tMod >= 360 && tMod < 1200) social   += 1/60;
       else                           unsocial  += 1/60;
     }
   }
   return {
-    social:   Math.round(social*100)/100,
-    unsocial: Math.round(unsocial*100)/100,
-    sunday:   Math.round(sunday*100)/100
+    social:      Math.round(social*100)/100,
+    unsocial:    Math.round(unsocial*100)/100,
+    sunday:      Math.round(sunday*100)/100,
+    bankHoliday: Math.round(bankHoliday*100)/100
   };
 }
 
@@ -1042,7 +1077,7 @@ function autoUpdateReliefActual(){
 function updateStats(){
   const rate = getHourlyRate();
   let days=0, nights=0, sick=0, al=0, socialHrs=0, unsocialHrs=0, sundayHrs=0, overrunMins=0, foodAmt=0;
-  let basicPay=0, nightSatPay=0, sundayPay=0, otPay=0;
+  let basicPay=0, nightSatPay=0, sundayPay=0, bhPay=0, otPay=0;
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   for(let d = 1; d <= daysInMonth; d++){
@@ -1063,10 +1098,11 @@ function updateStats(){
       socialHrs   += h.social;
       unsocialHrs += h.unsocial;
       sundayHrs   += h.sunday;
-      const total  = h.social + h.unsocial + h.sunday;
+      const total  = h.social + h.unsocial + h.sunday + h.bankHoliday;
       basicPay    += total * rate;
-      nightSatPay += h.unsocial * rate * 0.3;
-      sundayPay   += h.sunday   * rate * 0.6;
+      nightSatPay += h.unsocial     * rate * 0.3;
+      sundayPay   += h.sunday       * rate * 0.6;
+      bhPay       += h.bankHoliday  * rate * 0.6;
     }
 
     if(sh.overrunMins) overrunMins += sh.overrunMins;
@@ -1086,10 +1122,12 @@ function updateStats(){
   document.getElementById('statOverrun').textContent  = overrunMins + ' min';
   document.getElementById('statFood').textContent     = '£' + foodAmt.toFixed(2);
 
-  const gross = basicPay + nightSatPay + sundayPay + otPay;
+  const gross = basicPay + nightSatPay + sundayPay + bhPay + otPay;
   document.getElementById('payTotal').textContent     = '£' + gross.toFixed(2);
-  document.getElementById('payBreakdown').textContent =
-    `£${basicPay.toFixed(2)} basic · £${nightSatPay.toFixed(2)} night/sat · £${sundayPay.toFixed(2)} sunday · £${otPay.toFixed(2)} OT`;
+  let breakdown = `£${basicPay.toFixed(2)} basic · £${nightSatPay.toFixed(2)} night/sat · £${sundayPay.toFixed(2)} sunday`;
+  if(bhPay > 0) breakdown += ` · £${bhPay.toFixed(2)} bank hol`;
+  breakdown += ` · £${otPay.toFixed(2)} OT`;
+  document.getElementById('payBreakdown').textContent = breakdown;
 
   // Auto-update the relief tracker with calculated actual hours
   autoUpdateReliefActual();
@@ -1287,7 +1325,7 @@ function renderYearStats(){
   const rate = getHourlyRate();
   for(let m = 0; m < 12; m++){
     let hasMon = false;
-    let mBasic=0, mNightSat=0, mSunday=0, mOT=0, mFood=0;
+    let mBasic=0, mNightSat=0, mSunday=0, mBH=0, mOT=0, mFood=0;
     const daysInMonth = new Date(currentYear, m+1, 0).getDate();
     for(let d = 1; d <= daysInMonth; d++){
       const dateStr = `${currentYear}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -1297,16 +1335,17 @@ function renderYearStats(){
       if(sh.start && sh.end && WORKED_TYPES.includes(sh.type)){
         hasMon = true;
         const h = calcUnsocialHours(dateStr, sh.start, sh.end);
-        const total = h.social + h.unsocial + h.sunday;
+        const total = h.social + h.unsocial + h.sunday + h.bankHoliday;
         mBasic    += total * rate;
-        mNightSat += h.unsocial * rate * 0.3;
-        mSunday   += h.sunday   * rate * 0.6;
+        mNightSat += h.unsocial    * rate * 0.3;
+        mSunday   += h.sunday      * rate * 0.6;
+        mBH       += h.bankHoliday * rate * 0.6;
       }
       if(sh.otHours){ hasMon = true; mOT += sh.otHours * rate * 1.5; }
       if(sh.food) hasMon = true;
     }
     if(hasMon){
-      const gross = mBasic + mNightSat + mSunday + mOT + mFood;
+      const gross = mBasic + mNightSat + mSunday + mBH + mOT + mFood;
       totalGross += gross;
       html += `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F4F8;font-size:14px">
         <div style="font-weight:600">${MONTHS[m]}</div>
