@@ -411,7 +411,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="relief-inputs">
         <div class="form-group">
           <label>GRS Hours This Month</label>
-          <input type="number" id="reliefGRS" placeholder="0" step="0.5" oninput="updateRelief()"/>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button id="grsSignBtn" onclick="toggleGrsSign()"
+              style="flex-shrink:0;width:40px;height:40px;border-radius:8px;border:2px solid var(--nhs-mid);
+                     background:var(--nhs-mid);color:#fff;font-size:20px;font-weight:800;cursor:pointer;
+                     display:flex;align-items:center;justify-content:center;line-height:1;">+</button>
+            <input type="number" id="reliefGRS" placeholder="0" step="0.5" oninput="updateRelief()" style="flex:1;"/>
+          </div>
+          <div id="grsSignLabel" style="font-size:11px;color:var(--nhs-mid);font-weight:600;margin-top:4px;">
+            ➕ Hours owed to you
+          </div>
         </div>
         <!-- Actual hours are auto-calculated from calendar shifts + overrun -->
         <div class="form-group relief-auto-field">
@@ -993,9 +1002,40 @@ function loadSettings(){
 
 // ─── ROLLING RELIEF ────────────────────────────────────────────
 // Only the GRS field is manually edited — actual hours come from the calendar.
+
+// Toggle the GRS sign between + and -
+function toggleGrsSign(){
+  const monthKey = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+  if(!relief[monthKey]) relief[monthKey] = { grs:0, actual:0, grsSign:1 };
+  // Flip the sign
+  const currentSign = relief[monthKey].grsSign !== undefined ? relief[monthKey].grsSign : 1;
+  relief[monthKey].grsSign = currentSign === 1 ? -1 : 1;
+  updateGrsSignUI(relief[monthKey].grsSign);
+  saveData();
+  renderReliefMonths();
+}
+
+function updateGrsSignUI(sign){
+  const btn   = document.getElementById('grsSignBtn');
+  const label = document.getElementById('grsSignLabel');
+  if(sign === -1){
+    btn.textContent      = '−';
+    btn.style.background = 'var(--red)';
+    btn.style.borderColor= 'var(--red)';
+    label.style.color    = 'var(--red)';
+    label.textContent    = '➖ Hours owed by you';
+  } else {
+    btn.textContent      = '+';
+    btn.style.background = 'var(--nhs-mid)';
+    btn.style.borderColor= 'var(--nhs-mid)';
+    label.style.color    = 'var(--nhs-mid)';
+    label.textContent    = '➕ Hours owed to you';
+  }
+}
+
 function updateRelief(){
   const monthKey = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
-  if(!relief[monthKey]) relief[monthKey] = { grs:0, actual:0 };
+  if(!relief[monthKey]) relief[monthKey] = { grs:0, actual:0, grsSign:1 };
   relief[monthKey].grs = parseFloat(document.getElementById('reliefGRS').value) || 0;
   // Keep existing auto-calculated actual — don't overwrite it from this handler
   saveData();
@@ -1006,36 +1046,43 @@ function renderReliefMonths(){
   const monthKey = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
   const r = relief[monthKey] || {};
   if(r.grs !== undefined) document.getElementById('reliefGRS').value = r.grs;
+  // Restore the sign toggle state for this month
+  const sign = (r.grsSign !== undefined) ? r.grsSign : 1;
+  updateGrsSignUI(sign);
   // reliefActual is set by autoUpdateReliefActual, not from stored data here
-  // (avoids a stale value overwriting a freshly-calculated one)
 
-  let totalGRS=0, totalActual=0;
+  let totalBalance = 0;
   const keys = Object.keys(relief).sort().slice(-12);
   let html = '';
   keys.forEach(k => {
     const [,m] = k.split('-').map(Number);
-    const yr   = parseInt(k.split('-')[0]);
-    totalGRS    += relief[k].grs    || 0;
-    totalActual += relief[k].actual || 0;
-    const diff   = (relief[k].actual||0) - (relief[k].grs||0);
-    const col    = diff > 0 ? 'var(--red)' : (diff < 0 ? 'var(--green)' : 'var(--subtext)');
+    const yr    = parseInt(k.split('-')[0]);
+    const kSign = (relief[k].grsSign !== undefined) ? relief[k].grsSign : 1;
+    const grsVal = (relief[k].grs || 0) * kSign;
+    // Positive GRS (+) = hours owed to worker, so balance = actual - grs (surplus is good)
+    // Negative GRS (-) = hours owed by worker, so balance = actual + grs (they need to work extra)
+    const diff  = (relief[k].actual || 0) - grsVal;
+    totalBalance += diff;
+    const col   = diff > 0 ? 'var(--green)' : (diff < 0 ? 'var(--red)' : 'var(--subtext)');
+    const signLabel = kSign === -1 ? '−' : '+';
     html += `<div class="relief-month-row">
-      <div class="relief-month-name">${SHORT_MONTHS[m-1]} ${yr}</div>
-      <div class="relief-month-hrs">${(relief[k].actual||0).toFixed(2)}h
+      <div class="relief-month-name">${SHORT_MONTHS[m-1]} ${yr}
+        <span style="font-size:10px;font-weight:700;color:${kSign===-1?'var(--red)':'var(--nhs-mid)'};">${signLabel}${(relief[k].grs||0)}h GRS</span>
+      </div>
+      <div class="relief-month-hrs">${(relief[k].actual||0).toFixed(2)}h actual
         <span style="font-size:11px;color:${col}">${diff>0?'+':''}${diff.toFixed(2)}</span>
       </div>
     </div>`;
   });
   document.getElementById('reliefMonths').innerHTML = html;
 
-  const rollDiff = totalActual - totalGRS;
-  const badge    = document.getElementById('reliefBadge');
-  if(Math.abs(rollDiff) < 10){
+  const badge = document.getElementById('reliefBadge');
+  if(Math.abs(totalBalance) < 2){
     badge.className = 'balance-badge ok';   badge.textContent = '✅ Within normal parameters';
-  } else if(rollDiff > 10){
-    badge.className = 'balance-badge high'; badge.textContent = `⚠️ +${rollDiff.toFixed(2)}h over GRS`;
+  } else if(totalBalance > 2){
+    badge.className = 'balance-badge ok';   badge.textContent = `✅ +${totalBalance.toFixed(2)}h in credit`;
   } else {
-    badge.className = 'balance-badge low';  badge.textContent = `📉 ${rollDiff.toFixed(2)}h under GRS`;
+    badge.className = 'balance-badge high'; badge.textContent = `⚠️ ${totalBalance.toFixed(2)}h to work off`;
   }
 }
 
