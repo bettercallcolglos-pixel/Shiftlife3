@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="theme-color" content="#003087"/>
+<meta name="description" content="KineticShift — The NHS shift pay calculator built by ambulance workers, for ambulance workers. Track shifts, calculate pay, monitor relief hours."/>
+<title>KineticShift — NHS Shift Pay Calculator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:#003087;
+  --orange:#F5A623;
+  --green:#3CC67A;
+  --light:#F0F4F8;
+  --text:#1A2B3C;
+  --subtext:#5A6A7A;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:var(--text);}
+
+/* NAV */
+nav{background:var(--navy);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.nav-logo{display:flex;align-items:center;gap:12px;}
+.nav-logo img{height:40px;width:auto;}
+.nav-name{font-size:20px;font-weight:800;color:#fff;}
+.nav-name span{color:var(--orange);}
+.nav-btn{background:var(--orange);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;}
+.nav-btn:hover{background:#e09420;}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--navy) 0%,#005EB8 100%);color:#fff;padding:80px 24px 100px;text-align:center;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,0.05) 0%,transparent 60%);pointer-events:none;}
+.hero-badge{display:inline-block;background:rgba(245,166,35,0.2);border:1px solid var(--orange);color:var(--orange);border-radius:20px;padding:6px 16px;font-size:13px;font-weight:700;margin-bottom:24px;letter-spacing:0.5px;}
+.hero h1{font-size:clamp(36px,6vw,64px);font-weight:800;line-height:1.1;margin-bottom:20px;}
+.hero h1 span{color:var(--orange);}
+.hero p{font-size:clamp(16px,2vw,20px);opacity:0.85;max-width:600px;margin:0 auto 40px;line-height:1.6;}
+.hero-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
+.btn-primary{background:var(--orange);color:#fff;border:none;border-radius:12px;padding:16px 32px;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;transition:all 0.2s;}
+.btn-primary:hover{background:#e09420;transform:translateY(-2px);}
+.btn-secondary{background:rgba(255,255,255,0.15);color:#fff;border:2px solid rgba(255,255,255,0.4);border-radius:12px;padding:16px 32px;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;transition:all 0.2s;}
+.btn-secondary:hover{background:rgba(255,255,255,0.25);}
+
+/* PHONE MOCKUP */
+.hero-mockup{margin-top:60px;display:flex;justify-content:center;}
+.phone{background:var(--navy);border:3px solid rgba(255,255,255,0.2);border-radius:36px;padding:20px 16px;width:260px;box-shadow:0 40px 80px rgba(0,0,0,0.4);}
+.phone-screen{background:#F0F4F8;border-radius:24px;overflow:hidden;}
+.phone-header{background:var(--navy);padding:12px;display:flex;align-items:center;justify-content:space-between;}
+.phone-logo{color:#fff;font-size:14px;font-weight:800;}
+.phone-logo span{color:var(--orange);}
+.phone-month{color:rgba(255,255,255,0.8);font-size:12px;font-weight:600;}
+.phone-cal{padding:8px;}
+.cal-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;}
+.cal-cell{border-radius:6px;padding:3px 2px;text-align:center;font-size:8px;font-weight:700;}
+.cal-header{color:#5A6A7A;font-size:7px;font-weight:700;text-align:center;padding:2px;}
+.days{background:#FFFDE7;color:#7a5c00;}
+.nights{background:#E8EAF6;color:#283593;}
+.off{background:#E8FAF1;color:#1a7a42;}
+.mids{background:#FFF0E6;color:#7a3600;}
+.phone-stats{background:#fff;margin:4px 8px;border-radius:10px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.stat-mini{text-align:center;}
+.stat-val{font-size:14px;font-weight:800;color:var(--navy);}
+.stat-lbl{font-size:6px;color:#5A6A7A;}
+.phone-pay{background:var(--green);margin:4px 8px 8px;border-radius:10px;padding:8px;text-align:center;}
+.pay-val{font-size:16px;font-weight:800;color:#fff;}
+.pay-lbl{font-size:7px;color:rgba(255,255,255,0.8);}
+
+/* GREEN STRIPE */
+.stripe{background:var(--green);color:#fff;padding:16px 24px;text-align:center;font-size:15px;font-weight:700;}
+
+/* FEATURES */
+.features{padding:80px 24px;background:#fff;}
+.section-label{text-align:center;font-size:12px;font-weight:700;letter-spacing:2px;color:var(--orange);text-transform:uppercase;margin-bottom:12px;}
+.section-title{text-align:center;font-size:clamp(28px,4vw,42px);font-weight:800;color:var(--navy);margin-bottom:16px;}
+.section-sub{text-align:center;font-size:16px;color:var(--subtext);max-width:500px;margin:0 auto 60px;line-height:1.6;}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;max-width:1000px;margin:0 auto;}
+.feature-card{background:var(--light);border-radius:20px;padding:32px;border:2px solid transparent;transition:all 0.2s;}
+.feature-card:hover{border-color:var(--navy);transform:translateY(-4px);}
+.feature-icon{font-size:36px;margin-bottom:16px;}
+.feature-title{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:8px;}
+.feature-desc{font-size:14px;color:var(--subtext);line-height:1.6;}
+
+/* HOW IT WORKS */
+.how{background:var(--light);padding:80px 24px;}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:32px;max-width:900px;margin:0 auto;}
+.step{text-align:center;}
+.step-num{width:56px;height:56px;background:var(--navy);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;margin:0 auto 16px;}
+.step-title{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:8px;}
+.step-desc{font-size:14px;color:var(--subtext);line-height:1.6;}
+
+/* PRICING */
+.pricing{padding:80px 24px;background:#fff;}
+.price-card{max-width:420px;margin:0 auto;background:var(--navy);border-radius:24px;padding:40px;text-align:center;color:#fff;box-shadow:0 20px 60px rgba(0,48,135,0.3);}
+.price-badge{display:inline-block;background:var(--orange);color:#fff;border-radius:20px;padding:6px 16px;font-size:13px;font-weight:700;margin-bottom:20px;}
+.price-amount{font-size:56px;font-weight:800;line-height:1;}
+.price-amount span{font-size:24px;font-weight:600;opacity:0.7;}
+.price-period{font-size:16px;opacity:0.7;margin-bottom:8px;}
+.price-trial{font-size:14px;color:var(--green);font-weight:700;margin-bottom:32px;}
+.price-features{text-align:left;margin-bottom:32px;}
+.price-feature{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1);font-size:14px;}
+.price-feature:last-child{border:none;}
+.check{color:var(--green);font-size:16px;font-weight:800;}
+
+/* WHO */
+.who{background:var(--navy);padding:80px 24px;color:#fff;text-align:center;}
+.who .section-title{color:#fff;}
+.who-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px;max-width:800px;margin:40px auto 0;}
+.who-card{background:rgba(255,255,255,0.1);border-radius:16px;padding:24px;border:1px solid rgba(255,255,255,0.2);}
+.who-icon{font-size:32px;margin-bottom:12px;}
+.who-title{font-size:15px;font-weight:700;}
+
+/* DISCLAIMER */
+.disclaimer{background:#FFF3DC;padding:32px 24px;text-align:center;}
+.disclaimer p{font-size:13px;color:#7a3600;max-width:700px;margin:0 auto;line-height:1.6;}
+.disclaimer strong{color:#5a2800;}
+
+/* FOOTER */
+footer{background:var(--text);color:#fff;padding:40px 24px;text-align:center;}
+footer p{font-size:13px;opacity:0.6;margin-bottom:8px;}
+footer a{color:var(--orange);text-decoration:none;}
+
+/* CTA */
+.cta{background:linear-gradient(135deg,var(--orange),#e09420);padding:80px 24px;text-align:center;color:#fff;}
+.cta h2{font-size:clamp(28px,4vw,42px);font-weight:800;margin-bottom:16px;}
+.cta p{font-size:16px;opacity:0.9;margin-bottom:32px;}
+.btn-white{background:#fff;color:var(--orange);border:none;border-radius:12px;padding:16px 32px;font-size:16px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-block;transition:all 0.2s;}
+.btn-white:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.2);}
+
+@media(max-width:600px){
+  .hero{padding:60px 20px 80px;}
+  .phone{width:220px;}
+  .nav-btn{padding:8px 14px;font-size:13px;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <img src="KineticShift_logo_under_1MB.jpg" alt="KineticShift" onerror="this.style.display='none'"/>
+    <div class="nav-name">Kinetic<span>Shift</span></div>
+  </div>
+  <a href="index.html" class="nav-btn">Launch App →</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">🚑 Built by ambulance workers, for ambulance workers</div>
+  <h1>Know exactly what<br/>you're <span>earning</span></h1>
+  <p>KineticShift tracks your shifts, calculates your NHS AfC pay — including unsocial hours, Sunday enhancements and overtime — and keeps your rolling relief on track.</p>
+  <div class="hero-btns">
+    <a href="index.html" class="btn-primary">Start Free Trial →</a>
+    <a href="#features" class="btn-secondary">See Features</a>
+  </div>
+
+  <!-- PHONE MOCKUP -->
+  <div class="hero-mockup">
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="phone-header">
+          <div class="phone-logo">Kinetic<span>Shift</span></div>
+          <div class="phone-month">May 2026</div>
+        </div>
+        <div class="phone-cal">
+          <div class="cal-row">
+            <div class="cal-header">M</div><div class="cal-header">T</div><div class="cal-header">W</div>
+            <div class="cal-header">T</div><div class="cal-header">F</div><div class="cal-header">S</div><div class="cal-header">S</div>
+          </div>
+          <div class="cal-row">
+            <div class="cal-cell"></div><div class="cal-cell"></div><div class="cal-cell"></div>
+            <div class="cal-cell"></div><div class="cal-cell days" style="font-size:7px">DAYS</div>
+            <div class="cal-cell mids" style="font-size:7px">MIDS</div><div class="cal-cell off" style="font-size:7px">OFF</div>
+          </div>
+          <div class="cal-row">
+            <div class="cal-cell off" style="font-size:7px">OFF</div><div class="cal-cell off" style="font-size:7px">OFF</div>
+            <div class="cal-cell off" style="font-size:7px">OFF</div><div class="cal-cell nights" style="font-size:7px">NGT</div>
+            <div class="cal-cell nights" style="font-size:7px">NGT</div><div class="cal-cell off" style="font-size:7px">OFF</div>
+            <div class="cal-cell off" style="font-size:7px">OFF</div>
+          </div>
+          <div class="cal-row">
+            <div class="cal-cell off" style="font-size:7px">OFF</div><div class="cal-cell days" style="font-size:7px">DAYS</div>
+            <div class="cal-cell days" style="font-size:7px">DAYS</div><div class="cal-cell nights" style="font-size:7px">NGT</div>
+            <div class="cal-cell nights" style="font-size:7px">NGT</div><div class="cal-cell off" style="font-size:7px">OFF</div>
+            <div class="cal-cell off" style="font-size:7px">OFF</div>
+          </div>
+        </div>
+        <div class="phone-stats">
+          <div class="stat-mini"><div class="stat-val">8</div><div class="stat-lbl">Day shifts</div></div>
+          <div class="stat-mini"><div class="stat-val" style="color:#283593">6</div><div class="stat-lbl">Night shifts</div></div>
+          <div class="stat-mini"><div class="stat-val" style="color:#7B5EA7">87.5</div><div class="stat-lbl">Social hrs</div></div>
+          <div class="stat-mini"><div class="stat-val" style="color:#7B5EA7">76.5</div><div class="stat-lbl">Unsocial hrs</div></div>
+        </div>
+        <div class="phone-pay">
+          <div class="pay-lbl">Estimated gross pay</div>
+          <div class="pay-val">£3,035.46</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STRIPE -->
+<div class="stripe">
+  🔒 Your data is yours — secured with Google Firebase and never shared with anyone
+</div>
+
+<!-- FEATURES -->
+<div class="features" id="features">
+  <div class="section-label">Features</div>
+  <div class="section-title">Everything you need to<br/>understand your pay</div>
+  <div class="section-sub">No more guessing. No more checking payslips three times. KineticShift does the maths so you don't have to.</div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📅</div>
+      <div class="feature-title">Shift Calendar</div>
+      <div class="feature-desc">Log Days, Nights, Mids, Late shifts, Annual Leave, Sick days and Overtime. Tap any day to add or edit a shift in seconds.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💰</div>
+      <div class="feature-title">AfC Pay Calculator</div>
+      <div class="feature-desc">Automatically calculates basic pay, unsocial hours enhancement (30%), Sunday enhancement (60%), and overtime at x1.5.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔄</div>
+      <div class="feature-title">Rolling Relief Tracker</div>
+      <div class="feature-desc">Track your GRS hours against actual hours worked. Includes overrun time. Shows your running balance so you always know where you stand.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">Year Overview</div>
+      <div class="feature-desc">See your estimated gross pay month by month and year to date. Understand your earnings at a glance.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">☁️</div>
+      <div class="feature-title">Cloud Sync</div>
+      <div class="feature-desc">Sign in with Google and your shifts sync automatically across all your devices. Phone, tablet, computer — always up to date.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📤</div>
+      <div class="feature-title">Export Your Data</div>
+      <div class="feature-desc">Export your shifts to CSV for Excel, or back up everything as a JSON file. Your data is always yours to keep.</div>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div class="how">
+  <div class="section-label">How it works</div>
+  <div class="section-title" style="text-align:center;font-size:clamp(28px,4vw,42px);font-weight:800;color:var(--navy);margin-bottom:48px;">Up and running in minutes</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-title">Open the app</div>
+      <div class="step-desc">No download needed. Open kineticshift.online in your phone browser and tap "Add to Home Screen."</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title">Set your pay rate</div>
+      <div class="step-desc">Enter your AfC band and hourly rate in Settings. Takes 30 seconds.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title">Log your shifts</div>
+      <div class="step-desc">Tap any day on the calendar and add your shift. The app calculates everything instantly.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-title">Know your pay</div>
+      <div class="step-desc">See your estimated gross pay for the month — broken down into basic, unsocial, Sunday, and OT.</div>
+    </div>
+  </div>
+</div>
+
+<!-- PRICING -->
+<div class="pricing">
+  <div class="section-label">Pricing</div>
+  <div class="section-title" style="text-align:center;font-size:clamp(28px,4vw,42px);font-weight:800;color:var(--navy);margin-bottom:48px;">Simple, honest pricing</div>
+  <div class="price-card">
+    <div class="price-badge">🎉 Start Free</div>
+    <div class="price-amount"><span>£</span>1.99</div>
+    <div class="price-period">per month</div>
+    <div class="price-trial">✅ First month completely free — no card needed</div>
+    <div class="price-features">
+      <div class="price-feature"><span class="check">✓</span> Full shift calendar</div>
+      <div class="price-feature"><span class="check">✓</span> AfC pay calculations</div>
+      <div class="price-feature"><span class="check">✓</span> Rolling relief tracker</div>
+      <div class="price-feature"><span class="check">✓</span> Cloud sync across devices</div>
+      <div class="price-feature"><span class="check">✓</span> Export to CSV / Excel</div>
+      <div class="price-feature"><span class="check">✓</span> Cancel any time</div>
+    </div>
+    <a href="index.html" class="btn-primary" style="display:block;text-align:center;border-radius:12px;">Start Free Trial →</a>
+  </div>
+</div>
+
+<!-- WHO -->
+<div class="who">
+  <div class="section-label" style="color:var(--orange);">Who it's for</div>
+  <div class="section-title">Built for frontline shift workers</div>
+  <div class="who-grid">
+    <div class="who-card">
+      <div class="who-icon">🚑</div>
+      <div class="who-title">Ambulance Service</div>
+    </div>
+    <div class="who-card">
+      <div class="who-icon">🏥</div>
+      <div class="who-title">NHS Staff</div>
+    </div>
+    <div class="who-card">
+      <div class="who-icon">👮</div>
+      <div class="who-title">Police — Coming Soon</div>
+    </div>
+    <div class="who-card">
+      <div class="who-icon">🚒</div>
+      <div class="who-title">Fire Service — Coming Soon</div>
+    </div>
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="cta">
+  <h2>Ready to know exactly what you're earning?</h2>
+  <p>Join frontline workers already using KineticShift. First month free.</p>
+  <a href="index.html" class="btn-white">Start Free Trial →</a>
+</div>
+
+<!-- DISCLAIMER -->
+<div class="disclaimer">
+  <p><strong>⚠️ Independent App Disclaimer:</strong> KineticShift is an independent app created by an NHS ambulance worker. It is not affiliated with, endorsed by, or connected to the NHS, SWASFT, or any other healthcare organisation. All pay calculations are estimates only — always verify with your official payslip. <a href="privacy.html" style="color:#7a3600;">Privacy Policy & Terms</a></p>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p><strong style="color:#fff;">KineticShift</strong></p>
+  <p>Built by frontline workers, for frontline workers.</p>
+  <p style="margin-top:12px;">
+    <a href="index.html">Launch App</a> &nbsp;·&nbsp;
+    <a href="privacy.html">Privacy Policy</a> &nbsp;·&nbsp;
+    <a href="mailto:support@kineticshift.online">support@kineticshift.online</a>
+  </p>
+  <p style="margin-top:16px;">© 2026 KineticShift. Independent app — not affiliated with the NHS.</p>
+</footer>
+
+</body>
+</html>

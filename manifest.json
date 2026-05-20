@@ -1,14 +1,39 @@
 {
-  "name": "ShiftLife SWAST",
-  "short_name": "ShiftLife",
-  "description": "SWAST shift planner with NHS AfC pay calculation",
-  "start_url": "/",
+  "name": "KineticShift",
+  "short_name": "KineticShift",
+  "description": "NHS Shift Pay Calculator — track shifts, calculate pay, monitor relief hours",
+  "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#003087",
   "theme_color": "#003087",
   "orientation": "portrait",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["productivity", "finance", "health"],
+  "shortcuts": [
+    {
+      "name": "Calendar",
+      "short_name": "Calendar",
+      "description": "View your shift calendar",
+      "url": "/index.html",
+      "icons": [{"src": "icon-192.png", "sizes": "192x192"}]
+    }
   ]
 }
