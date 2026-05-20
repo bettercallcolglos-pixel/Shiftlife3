@@ -2,7 +2,7 @@
   "name": "KineticShift",
   "short_name": "KineticShift",
   "description": "NHS Shift Pay Calculator — track shifts, calculate pay, monitor relief hours",
-  "start_url": "/index.html",
+  "start_url": "/app.html",
   "display": "standalone",
   "background_color": "#003087",
   "theme_color": "#003087",

@@ -3,6 +3,7 @@ const CACHE_NAME = 'kineticshift-v1.1';
 const ASSETS = [
   '/',
   '/index.html',
+  '/app.html',
   '/privacy.html',
   '/manifest.json',
   '/icon-192.png',
