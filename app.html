@@ -238,6 +238,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="install-banner-close" onclick="document.getElementById('installBanner').classList.add('hidden')">&#215;</button>
 </div>
 
+<!-- TIMESHEET REMINDER BANNER -->
+<div id="timesheetReminder" class="hidden" style="background:#F5A623;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+  <div style="font-size:13px;font-weight:700;">📋 Don&#39;t forget your timesheet!</div>
+  <button onclick="dismissTimesheetReminder()" style="background:rgba(255,255,255,0.25);border:none;color:#fff;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Dismiss</button>
+</div>
+
 <!-- HEADER -->
 <div class="header">
   <div class="header-main" style="padding:8px 14px;">
@@ -619,12 +625,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
 
     <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:14px;box-shadow:var(--shadow)">
-      <div style="font-size:11px;color:var(--subtext);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:8px;">Which month does this payslip cover?</div>
-      <div style="display:flex;gap:8px;">
-        <select id="psMonthSelect" onchange="updatePayslipMonth()" style="flex:1;border:1.5px solid #D1DAE6;border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;background:#fff;color:var(--text);outline:none;"></select>
-        <select id="psYearSelect" onchange="updatePayslipMonth()" style="width:90px;border:1.5px solid #D1DAE6;border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;background:#fff;color:var(--text);outline:none;"></select>
-      </div>
-      <div style="font-size:12px;color:var(--subtext);margin-top:6px;">Select the month your shifts were worked. Your May payslip covers April.</div>
+      <div style="font-size:11px;color:var(--subtext);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:4px;">Checking against</div>
+      <div style="font-size:20px;font-weight:800;color:var(--nhs-blue)" id="payslipMonthLabel">—</div>
+      <div style="font-size:12px;color:var(--subtext);margin-top:2px;">Your logged shifts (SWAST pays a month in hand)</div>
     </div>
 
     <div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:var(--shadow)">
@@ -1573,31 +1576,12 @@ function dismissOnboarding(){
 // ─── PAYSLIP CHECKER ──────────────────────────────────────────
 
 function initPayslipPage(){
-  const today   = new Date();
-  const curYear = today.getFullYear();
-  const mSel    = document.getElementById('psMonthSelect');
-  const ySel    = document.getElementById('psYearSelect');
-  if(!mSel.options.length){
-    MONTHS.forEach((m,i) => { const o=document.createElement('option'); o.value=i; o.textContent=m; mSel.appendChild(o); });
-  }
-  if(!ySel.options.length){
-    for(let y=curYear-2;y<=curYear;y++){ const o=document.createElement('option'); o.value=y; o.textContent=y; ySel.appendChild(o); }
-  }
-  const defMonth = today.getMonth()===0 ? 11 : today.getMonth()-1;
-  const defYear  = today.getMonth()===0 ? curYear-1 : curYear;
-  mSel.value = defMonth;
-  ySel.value = defYear;
-  updatePayslipMonth();
-}
-
-function updatePayslipMonth(){
-  const mSel = document.getElementById('psMonthSelect');
-  const ySel = document.getElementById('psYearSelect');
-  if(!mSel||!ySel) return;
-  window._psMonth = parseInt(mSel.value);
-  window._psYear  = parseInt(ySel.value);
-  document.getElementById('payslipResults').classList.add('hidden');
-  document.getElementById('pdfStatus').textContent = '';
+  const today     = new Date();
+  const prevMonth = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
+  const prevYear  = today.getMonth() === 0 ? today.getFullYear()-1 : today.getFullYear();
+  window._psMonth = prevMonth;
+  window._psYear  = prevYear;
+  document.getElementById('payslipMonthLabel').textContent = MONTHS[prevMonth]+' '+prevYear;
 }
 
 function resetPayslip(){
@@ -1769,9 +1753,29 @@ function parseSwastPayslip(text){
   };
 }
 
+function checkTimesheetReminder(){
+  const today    = new Date();
+  const lastDay  = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
+  const daysLeft = lastDay - today.getDate();
+  if(daysLeft > 2) return;
+  const key       = 'ks_ts_dismissed';
+  const dismissed = localStorage.getItem(key);
+  const thisMonth = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+  if(dismissed === thisMonth) return;
+  document.getElementById('timesheetReminder').classList.remove('hidden');
+}
+
+function dismissTimesheetReminder(){
+  const today     = new Date();
+  const thisMonth = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+  localStorage.setItem('ks_ts_dismissed', thisMonth);
+  document.getElementById('timesheetReminder').classList.add('hidden');
+}
+
 init();
 renderReliefMonths();
 checkOnboarding();
+checkTimesheetReminder();
 
 // ─── FIREBASE — initialised after app is ready ────────────────
 (function initFirebase(){
