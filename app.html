@@ -1227,11 +1227,12 @@ function updateStats(){
   document.getElementById('statBH').textContent       = bhShifts;
   document.getElementById('statMileage').textContent  = '£' + mileageTotal.toFixed(2);
 
-  const gross = basicPay + nightSatPay + sundayPay + bhPay + otPay;
+  const gross = basicPay + nightSatPay + sundayPay + bhPay + otPay + foodAmt;
   document.getElementById('payTotal').textContent     = '£' + gross.toFixed(2);
   let breakdown = `£${basicPay.toFixed(2)} basic · £${nightSatPay.toFixed(2)} night/sat · £${sundayPay.toFixed(2)} sunday`;
   if(bhPay > 0) breakdown += ` · £${bhPay.toFixed(2)} bank hol`;
   breakdown += ` · £${otPay.toFixed(2)} OT`;
+  if(foodAmt > 0) breakdown += ` · £${foodAmt.toFixed(2)} meal`;
   document.getElementById('payBreakdown').textContent = breakdown;
 
   // Auto-update the relief tracker with calculated actual hours
@@ -1776,6 +1777,21 @@ init();
 renderReliefMonths();
 checkOnboarding();
 checkTimesheetReminder();
+
+function scheduleNextMidnightRefresh(){
+  const now = new Date();
+  const msUntilMidnight = new Date(
+    now.getFullYear(), now.getMonth(), now.getDate() + 1,
+    0, 0, 0
+  ) - now;
+  setTimeout(() => {
+    renderCalendar();
+    updateStats();
+    checkTimesheetReminder();
+    scheduleNextMidnightRefresh();
+  }, msUntilMidnight);
+}
+scheduleNextMidnightRefresh();
 
 // ─── FIREBASE — initialised after app is ready ────────────────
 (function initFirebase(){
